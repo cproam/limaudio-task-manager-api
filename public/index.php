@@ -23,6 +23,7 @@ use App\Controllers\UserController;
 use App\Controllers\AuthController;
 use App\Controllers\UploadController;
 use App\Controllers\TaskFeatureController;
+use App\Controllers\WebhookController;
 use App\Database\DB;
 use App\Support\Env;
 use App\Security\Auth;
@@ -51,6 +52,7 @@ $users = new UserController();
 $auth = new AuthController();
 $upload = new UploadController();
 $taskFeature = new TaskFeatureController();
+$webhook = new WebhookController();
 
 // Ensure DB is migrated
 DB::migrate();
@@ -63,7 +65,7 @@ $router->beforeEach(function (Request $r) {
 	if ($method === 'OPTIONS') {
 		return; // allow CORS preflight
 	}
-	if ($path !== '/auth/login') {
+	if ($path !== '/auth/login' && $path !== '/webhook/telegram') {
 		if (!Auth::requireBearer($r)) {
 			exit; // response already sent
 		}
@@ -89,6 +91,9 @@ $router->get('/task', fn(Request $r) => $taskFeature->list($r));
 $router->get('/task/{id}', fn(Request $r, array $p) => $taskFeature->get($r, $p));
 $router->post('/task/{id}/comments', fn(Request $r, array $p) => $taskFeature->addComment($r, $p));
 $router->post('/task/{id}/files', fn(Request $r, array $p) => $taskFeature->attachFile($r, $p));
+
+// Telegram webhook (public)
+$router->post('/webhook/telegram', fn(Request $r) => $webhook->telegram($r));
 
 // User routes
 $router->post('/users', fn(Request $r) => $users->create($r));
