@@ -19,11 +19,19 @@ class UserController
 
     public function create(Request $req)
     {
+        // Only admins can create users
+        $claims = $GLOBALS['auth_user'] ?? null;
+        $roles = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
+        if (!in_array('admin', $roles, true)) {
+            return Response::json(['error' => 'admin role required'], 403);
+        }
+
         $data = $req->body;
         $name = trim((string)($data['name'] ?? ''));
         $email = strtolower(trim((string)($data['email'] ?? '')));
         $password = (string)($data['password'] ?? '');
-        $roles = $data['roles'] ?? [];
+    $roles = $data['roles'] ?? [];
+    $telegramId = isset($data['telegram_id']) ? (string)$data['telegram_id'] : null;
         if (!is_array($roles)) $roles = [];
 
         if ($name === '' || $email === '' || $password === '') {
@@ -40,7 +48,7 @@ class UserController
         if ($this->users->findByEmail($email)) {
             return Response::json(['error' => 'email already exists'], 409);
         }
-        $user = $this->users->create($name, $email, $password, $roles);
+    $user = $this->users->create($name, $email, $password, $roles, $telegramId);
         return Response::json($user, 201);
     }
 

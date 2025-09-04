@@ -21,6 +21,8 @@ use App\Routing\Router;
 use App\Controllers\TaskController;
 use App\Controllers\UserController;
 use App\Controllers\AuthController;
+use App\Controllers\UploadController;
+use App\Controllers\TaskFeatureController;
 use App\Database\DB;
 use App\Support\Env;
 use App\Security\Auth;
@@ -47,13 +49,15 @@ $router = new Router();
 $tasks = new TaskController();
 $users = new UserController();
 $auth = new AuthController();
+$upload = new UploadController();
+$taskFeature = new TaskFeatureController();
 
 // Ensure DB is migrated
 DB::migrate();
 
 // Optional hook before each route (e.g., auth)
 $router->beforeEach(function (Request $r) {
-	// Protect non-GET endpoints with Bearer API key
+	// Protect non-GET endpoints with Bearer JWT
 	$method = strtoupper($r->method);
 	$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 	if ($method !== 'GET' && $method !== 'OPTIONS' && $path !== '/auth/login') {
@@ -74,6 +78,13 @@ $router->post('/tasks', fn(Request $r) => $tasks->create($r));
 $router->put('/tasks/{id}', fn(Request $r, array $p) => $tasks->update($r, $p));
 $router->patch('/tasks/{id}', fn(Request $r, array $p) => $tasks->update($r, $p));
 $router->delete('/tasks/{id}', fn(Request $r, array $p) => $tasks->delete($r, $p));
+
+// New Task feature routes
+$router->post('/upload', fn(Request $r) => $upload->upload($r));
+$router->post('/task', fn(Request $r) => $taskFeature->create($r));
+$router->get('/task', fn(Request $r) => $taskFeature->list($r));
+$router->get('/task/{id}', fn(Request $r, array $p) => $taskFeature->get($r, $p));
+$router->post('/task/{id}/comments', fn(Request $r, array $p) => $taskFeature->addComment($r, $p));
 
 // User routes
 $router->post('/users', fn(Request $r) => $users->create($r));

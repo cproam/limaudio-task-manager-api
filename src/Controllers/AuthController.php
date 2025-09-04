@@ -18,7 +18,7 @@ class AuthController
             return Response::json(['error' => 'email and password are required'], 422);
         }
         $pdo = DB::conn();
-        $stmt = $pdo->prepare('SELECT id,name,email,password_hash FROM users WHERE email=?');
+    $stmt = $pdo->prepare('SELECT id,name,email,password_hash,telegram_id FROM users WHERE email=?');
         $stmt->execute([$email]);
         $u = $stmt->fetch();
         if (!$u || !password_verify($password, $u['password_hash'])) {
@@ -29,6 +29,6 @@ class AuthController
         $rs->execute([(int)$u['id']]);
         $roles = array_map(fn($r) => $r['name'], $rs->fetchAll());
         $token = Jwt::sign(['sub' => (int)$u['id'], 'email' => $u['email'], 'name' => $u['name'], 'roles' => $roles], 3600 * 12);
-        return Response::json(['token' => $token, 'user' => ['id' => (int)$u['id'], 'name' => $u['name'], 'email' => $u['email'], 'roles' => $roles]]);
+    return Response::json(['token' => $token, 'user' => ['id' => (int)$u['id'], 'name' => $u['name'], 'email' => $u['email'], 'telegram_id' => $u['telegram_id'], 'roles' => $roles]]);
     }
 }

@@ -16,13 +16,9 @@ class Auth
             Response::json(['error' => 'Unauthorized'], 401, ['WWW-Authenticate' => 'Bearer']);
             return false;
         }
-        $token = trim(substr($auth, 7));
-        // Accept either static API_KEY or a signed JWT
-        $key = Env::get('API_KEY');
-        if ($key && hash_equals($key, $token)) {
-            return true;
-        }
-        $claims = Jwt::verify($token);
+    $token = trim(substr($auth, 7));
+    // Accept only signed JWTs
+    $claims = Jwt::verify($token);
         if ($claims) {
             // Optionally attach claims to request (via global)
             $GLOBALS['auth_user'] = $claims;

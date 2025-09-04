@@ -1,0 +1,63 @@
+<?php
+
+// CLI cron script: checks tasks and sends Telegram notifications at 30%, 10%, 0% remaining
+
+// Bootstrap autoloading
+$root = dirname(__DIR__);
+$autoload = $root . '/vendor/autoload.php';
+if (file_exists($autoload)) require $autoload;
+else {
+    spl_autoload_register(function ($class) use ($root) {
+        $prefix = 'App\\';
+        $baseDir = $root . '/src/';
+        if (str_starts_with($class, $prefix)) {
+            $relative = substr($class, strlen($prefix));
+            $file = $baseDir . str_replace('\\', '/', $relative) . '.php';
+            if (file_exists($file)) require $file;
+        }
+    });
+}
+
+use App\Database\DB;
+use App\Support\Env;
+use App\Notifications\Telegram;
+
+Env::load($root . '/.env');
+DB::migrate();
+
+$pdo = DB::conn();
+
+// Fetch tasks with due dates
+$stmt = $pdo->query("SELECT id, title, created_at, due_at, notified_30, notified_10, notified_0 FROM tasks WHERE due_at IS NOT NULL");
+$tasks = $stmt->fetchAll();
+$now = time();
+
+foreach ($tasks as $t) {
+    $created = strtotime($t['created_at']);
+    $due = strtotime($t['due_at']);
+    if (!$created || !$due || $due <= $created) continue; // skip invalid
+    $total = $due - $created;
+    $left = $due - $now;
+    $pctLeft = $left / $total; // 0..1
+
+    $id = (int)$t['id'];
+    $title = $t['title'];
+
+    // 30%
+    if ($pctLeft <= 0.30 && !$t['notified_30'] && $left > 0) {
+        Telegram::send("⏳ Задача #{$id} ({$title}) — осталось ~30% времени");
+        $pdo->prepare('UPDATE tasks SET notified_30=1 WHERE id=?')->execute([$id]);
+    }
+    // 10%
+    if ($pctLeft <= 0.10 && !$t['notified_10'] && $left > 0) {
+        Telegram::send("⚠️ Задача #{$id} ({$title}) — осталось ~10% времени");
+        $pdo->prepare('UPDATE tasks SET notified_10=1 WHERE id=?')->execute([$id]);
+    }
+    // 0% or overdue
+    if ($left <= 0 && !$t['notified_0']) {
+        Telegram::send("⛔ Задача #{$id} ({$title}) — срок истёк");
+        $pdo->prepare('UPDATE tasks SET notified_0=1 WHERE id=?')->execute([$id]);
+    }
+}
+
+echo "Done\n";

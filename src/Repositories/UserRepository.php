@@ -14,12 +14,12 @@ class UserRepository
         $this->pdo = DB::conn();
     }
 
-    public function create(string $name, string $email, string $password, array $roles = []): array
+    public function create(string $name, string $email, string $password, array $roles = [], ?string $telegramId = null): array
     {
         $now = gmdate('c');
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $this->pdo->prepare('INSERT INTO users(name,email,password_hash,created_at,updated_at) VALUES(?,?,?,?,?)');
-        $stmt->execute([$name, $email, $hash, $now, $now]);
+        $stmt = $this->pdo->prepare('INSERT INTO users(name,email,password_hash,telegram_id,created_at,updated_at) VALUES(?,?,?,?,?,?)');
+        $stmt->execute([$name, $email, $hash, $telegramId, $now, $now]);
         $id = (int)$this->pdo->lastInsertId();
         if ($roles) $this->assignRoles($id, $roles);
         return $this->findById($id);
@@ -27,7 +27,7 @@ class UserRepository
 
     public function findById(int $id): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT id,name,email,created_at,updated_at FROM users WHERE id=?');
+    $stmt = $this->pdo->prepare('SELECT id,name,email,telegram_id,created_at,updated_at FROM users WHERE id=?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         if (!$row) return null;
@@ -37,7 +37,7 @@ class UserRepository
 
     public function findByEmail(string $email): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT id,name,email,created_at,updated_at FROM users WHERE email=?');
+    $stmt = $this->pdo->prepare('SELECT id,name,email,telegram_id,created_at,updated_at FROM users WHERE email=?');
         $stmt->execute([$email]);
         $row = $stmt->fetch();
         if (!$row) return null;
@@ -47,7 +47,7 @@ class UserRepository
 
     public function list(int $limit = 50, int $offset = 0): array
     {
-        $stmt = $this->pdo->prepare('SELECT id,name,email,created_at,updated_at FROM users ORDER BY id DESC LIMIT ? OFFSET ?');
+        $stmt = $this->pdo->prepare('SELECT id,name,email,telegram_id,created_at,updated_at FROM users ORDER BY id DESC LIMIT ? OFFSET ?');
         $stmt->bindValue(1, $limit, PDO::PARAM_INT);
         $stmt->bindValue(2, $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -56,6 +56,12 @@ class UserRepository
             $u['roles'] = $this->getRoles((int)$u['id']);
         }
         return $users;
+    }
+
+    public function setTelegramId(int $userId, string $telegramId): void
+    {
+        $stmt = $this->pdo->prepare('UPDATE users SET telegram_id=?, updated_at=? WHERE id=?');
+        $stmt->execute([$telegramId, gmdate('c'), $userId]);
     }
 
     public function assignRoles(int $userId, array $roles): void
