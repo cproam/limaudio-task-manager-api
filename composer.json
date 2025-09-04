@@ -1,0 +1,11 @@
+{
+  "name": "limaudio/task-manager-api",
+  "description": "Simple task manager API for Limaudio (lightweight router + controllers)",
+  "type": "project",
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}
