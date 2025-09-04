@@ -85,6 +85,7 @@ $router->post('/task', fn(Request $r) => $taskFeature->create($r));
 $router->get('/task', fn(Request $r) => $taskFeature->list($r));
 $router->get('/task/{id}', fn(Request $r, array $p) => $taskFeature->get($r, $p));
 $router->post('/task/{id}/comments', fn(Request $r, array $p) => $taskFeature->addComment($r, $p));
+$router->post('/task/{id}/files', fn(Request $r, array $p) => $taskFeature->attachFile($r, $p));
 
 // User routes
 $router->post('/users', fn(Request $r) => $users->create($r));

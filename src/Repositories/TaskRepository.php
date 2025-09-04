@@ -91,6 +91,21 @@ class TaskRepository
         return ['id' => (int)$this->pdo->lastInsertId(), 'task_id' => $taskId, 'user_id' => $userId, 'text' => $text, 'created_at' => $now];
     }
 
+    public function attachFile(int $taskId, string $fileName, string $fileUrl): array
+    {
+        $stmt = $this->pdo->prepare('INSERT INTO task_files(task_id,file_name,file_url) VALUES(?,?,?)');
+        $stmt->execute([$taskId, $fileName, $fileUrl]);
+        $id = (int)$this->pdo->lastInsertId();
+        return ['id' => $id, 'task_id' => $taskId, 'file_name' => $fileName, 'file_url' => $fileUrl];
+    }
+
+    public function deleteFileById(int $taskId, int $fileId): bool
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM task_files WHERE id=? AND task_id=?');
+        $stmt->execute([$fileId, $taskId]);
+        return $stmt->rowCount() > 0;
+    }
+
     private function getLinks(int $taskId): array
     {
         $stmt = $this->pdo->prepare('SELECT url FROM task_links WHERE task_id=?');
