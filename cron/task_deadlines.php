@@ -28,7 +28,7 @@ DB::migrate();
 $pdo = DB::conn();
 
 // Fetch tasks with due dates
-$stmt = $pdo->query("SELECT id, title, created_at, due_at, notified_30, notified_10, notified_0 FROM tasks WHERE due_at IS NOT NULL");
+$stmt = $pdo->query("SELECT t.id, t.title, t.created_at, t.due_at, t.notified_30, t.notified_10, t.notified_0, u.telegram_id AS assignee_tg FROM tasks t LEFT JOIN users u ON u.id=t.assigned_user_id WHERE t.due_at IS NOT NULL");
 $tasks = $stmt->fetchAll();
 $now = time();
 
@@ -45,17 +45,23 @@ foreach ($tasks as $t) {
 
     // 30%
     if ($pctLeft <= 0.30 && !$t['notified_30'] && $left > 0) {
-        Telegram::send("⏳ Задача #{$id} ({$title}) — осталось ~30% времени");
+        $msg = "⏳ Задача #{$id} ({$title}) — осталось ~30% времени";
+        Telegram::send($msg);
+        if (!empty($t['assignee_tg'])) { App\Notifications\Telegram::sendTo((string)$t['assignee_tg'], $msg); }
         $pdo->prepare('UPDATE tasks SET notified_30=1 WHERE id=?')->execute([$id]);
     }
     // 10%
     if ($pctLeft <= 0.10 && !$t['notified_10'] && $left > 0) {
-        Telegram::send("⚠️ Задача #{$id} ({$title}) — осталось ~10% времени");
+        $msg = "⚠️ Задача #{$id} ({$title}) — осталось ~10% времени";
+        Telegram::send($msg);
+        if (!empty($t['assignee_tg'])) { App\Notifications\Telegram::sendTo((string)$t['assignee_tg'], $msg); }
         $pdo->prepare('UPDATE tasks SET notified_10=1 WHERE id=?')->execute([$id]);
     }
     // 0% or overdue
     if ($left <= 0 && !$t['notified_0']) {
-        Telegram::send("⛔ Задача #{$id} ({$title}) — срок истёк");
+        $msg = "⛔ Задача #{$id} ({$title}) — срок истёк";
+        Telegram::send($msg);
+        if (!empty($t['assignee_tg'])) { App\Notifications\Telegram::sendTo((string)$t['assignee_tg'], $msg); }
         $pdo->prepare('UPDATE tasks SET notified_0=1 WHERE id=?')->execute([$id]);
     }
 }

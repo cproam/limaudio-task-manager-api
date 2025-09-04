@@ -39,23 +39,21 @@ class TaskFeatureController
 
         $task = $this->tasks->create($payload);
 
-        // Notify Telegram (personal to assignee if possible)
+        // Notify Telegram: duplicate to admin chat AND personally to assignee (if set)
         $title = htmlspecialchars($task['title'] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $msg = "🆕 Новая задача: <b>{$title}</b>\nСтатус: {$task['status']}\nID: {$task['id']}";
         $assigneeId = $payload['assigned_user_id'] ?? null;
+        // Always send to admin chat (global)
+        \App\Notifications\Telegram::send($msg);
+        // Additionally, send personally to assignee if available
         if ($assigneeId) {
-            // Lookup telegram_id of assignee
             $pdo = \App\Database\DB::conn();
             $st = $pdo->prepare('SELECT telegram_id FROM users WHERE id=?');
             $st->execute([(int)$assigneeId]);
             $tg = $st->fetchColumn();
             if ($tg) {
                 \App\Notifications\Telegram::sendTo((string)$tg, $msg);
-            } else {
-                \App\Notifications\Telegram::send($msg); // fallback to global chat
             }
-        } else {
-            \App\Notifications\Telegram::send($msg);
         }
 
         return Response::json($task, 201);
@@ -87,6 +85,8 @@ class TaskFeatureController
         if ($text === '') return Response::json(['error' => 'text is required'], 422);
         $comment = $this->tasks->addComment($id, $userId, $text);
         $msg = "💬 Новый комментарий к задаче #{$id}:\n" . $text;
+        // Always notify admin chat
+        Telegram::send($msg);
         // Notify assignee personally if set
         $pdo = \App\Database\DB::conn();
         $st = $pdo->prepare('SELECT u.telegram_id FROM tasks t LEFT JOIN users u ON u.id=t.assigned_user_id WHERE t.id=?');
@@ -94,8 +94,6 @@ class TaskFeatureController
         $tg = $st->fetchColumn();
         if ($tg) {
             \App\Notifications\Telegram::sendTo((string)$tg, $msg);
-        } else {
-            Telegram::send($msg);
         }
         return Response::json($comment, 201);
     }
