@@ -57,10 +57,13 @@ DB::migrate();
 
 // Optional hook before each route (e.g., auth)
 $router->beforeEach(function (Request $r) {
-	// Protect non-GET endpoints with Bearer JWT
+	// Require Bearer JWT for all routes except /auth/login and OPTIONS preflight
 	$method = strtoupper($r->method);
 	$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-	if ($method !== 'GET' && $method !== 'OPTIONS' && $path !== '/auth/login') {
+	if ($method === 'OPTIONS') {
+		return; // allow CORS preflight
+	}
+	if ($path !== '/auth/login') {
 		if (!Auth::requireBearer($r)) {
 			exit; // response already sent
 		}
