@@ -159,3 +159,52 @@
 - БД: SQLite файл `storage/database.sqlite` создается автоматически
 - Автозагрузка: Composer (при наличии) или встроенный PSR-4
 - При необходимости добавлю дополнительные эндпоинты (CRUD по направлениям, `/auth/me`, привязка `telegram_id` текущим пользователем и т.п.)
+
+## Работа с файлами — практические сценарии
+
+Ниже — проверенные способы работы с файлами (Postman и curl на Windows).
+
+### Вариант A: Загрузить и прикрепить позже
+1) Загрузка
+- POST `/upload` (Bearer JWT)
+- Body: form-data → ключ `file` (тип File)
+- Ответ: `{ "file_name", "file_url", "hash" }`
+
+2) Прикрепление к задаче
+- POST `/task/{id}/files` (Bearer JWT)
+- Body: raw → JSON:
+  `{ "file_name": "имя_видаемо_пользователю.pdf", "file_url": "/uploads/<hash>.pdf" }`
+- Ответ: `{ id, task_id, file_name, file_url }`
+
+### Вариант B: Сразу прикрепить файл к задаче
+- POST `/task/{id}/files` (Bearer JWT)
+- Body: form-data → ключ `file` (тип File)
+- Не задавайте вручную заголовок Content-Type — Postman сделает это сам.
+- Ответ: `{ id, task_id, file_name, file_url }`
+
+### Вариант C: Прикрепить на этапе создания задачи
+- Поддерживается через ссылочный способ: предварительно загрузите файл (Вариант A/шаг 1),
+  затем в `POST /task` передайте массив `files`:
+  `"files": [ { "file_name": "spec.pdf", "file_url": "/uploads/abcd1234.pdf" } ]`
+- Одновременная отправка multipart (файл) и JSON для `/task` в одном запросе пока не поддерживается.
+
+### Примеры для Postman
+- Загрузка: POST `/upload` → Body/form-data: `file` = <File>
+- Привязка (multipart): POST `/task/{id}/files` → Body/form-data: `file` = <File>
+- Привязка (JSON): POST `/task/{id}/files` → Body/raw(JSON): `{ "file_name": "...", "file_url": "/uploads/..." }`
+- Всегда добавляйте Authorization: Bearer `<jwt>`
+
+### Примеры для PowerShell (Windows)
+- Загрузка:
+  `curl.exe -F "file=@C:\\path\\to\\doc.pdf" -H "Authorization: Bearer <JWT>" https://your-domain/upload`
+- Привязка (multipart):
+  `curl.exe -F "file=@C:\\path\\to\\doc.pdf" -H "Authorization: Bearer <JWT>" https://your-domain/task/123/files`
+- Привязка (JSON):
+  `curl.exe -X POST -H "Authorization: Bearer <JWT>" -H "Content-Type: application/json" -d "{\"file_name\":\"doc.pdf\",\"file_url\":\"/uploads/abcd1234.pdf\"}" https://your-domain/task/123/files`
+
+### Частые ошибки и решения
+- Сообщение: `file_name and file_url are required` при форм-data —
+  означает, что файл не был отправлен как часть multipart. Проверьте, что ключ именно `file` и тип `File`.
+- Не задавайте вручную заголовок `Content-Type: multipart/form-data` — без boundary сервер не увидит файл; доверьте это Postman/curl.
+- Большие файлы: увеличьте `upload_max_filesize` и `post_max_size` в php.ini, затем перезапустите сервер (Herd).
+- Доступ: `file_url` доступен по публичному пути `/uploads/<hash>.<ext>` из `public/uploads/`.
