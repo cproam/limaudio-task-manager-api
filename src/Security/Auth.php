@@ -4,27 +4,39 @@ namespace App\Security;
 
 use App\Http\Request;
 use App\Http\Response;
-use App\Support\Env;
 use App\Security\Jwt;
 
 class Auth
 {
+    private static function getAuthorizationHeader(): ?string {
+        if (!empty($_SERVER['HTTP_AUTHORIZATION'])) return $_SERVER['HTTP_AUTHORIZATION'];
+        if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        if (function_exists('getallheaders')) {
+            foreach (getallheaders() as $k => $v) {
+                if (strcasecmp($k, 'Authorization') === 0) return $v;
+            }
+        }
+        return null;
+    }
+
     public static function requireBearer(Request $req): bool
     {
-        $auth = $req->headers['Authorization'] ?? '';
-        if (!str_starts_with($auth, 'Bearer ')) {
-            Response::json(['error' => 'Unauthorized'], 401, ['WWW-Authenticate' => 'Bearer']);
+        $auth = self::getAuthorizationHeader() ?? ($req->headers['Authorization'] ?? '');
+        if (!preg_match('/^\s*Bearer\s+(.+)\s*$/i', $auth, $m)) {
+            header('WWW-Authenticate: Bearer realm="api", error="invalid_request"');
+            Response::json(['error' => 'Unauthorized'], 401);
             return false;
         }
-    $token = trim(substr($auth, 7));
-    // Accept only signed JWTs
-    $claims = Jwt::verify($token);
+
+        $token = trim($m[1]);
+        $claims = Jwt::verify($token);
         if ($claims) {
-            // Optionally attach claims to request (via global)
             $GLOBALS['auth_user'] = $claims;
             return true;
         }
-        Response::json(['error' => 'Forbidden'], 403);
+
+        header('WWW-Authenticate: Bearer realm="api", error="invalid_token", error_description="Invalid or expired token"');
+        Response::json(['error' => 'Unauthorized'], 401);
         return false;
     }
 }
