@@ -76,11 +76,19 @@ class TaskFeatureController
         $claims = $GLOBALS['auth_user'] ?? null;
         $roles = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
         $userId = isset($claims['sub']) ? (int)$claims['sub'] : 0;
+        $date = null;
+        if (!empty($req->query['date'])) {
+            $d = (string)$req->query['date'];
+            // naive YYYY-MM-DD validation
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                $date = $d;
+            }
+        }
 
         if (in_array('admin', $roles, true)) {
-            $items = $this->tasks->list($limit, $offset);
+            $items = $this->tasks->list($limit, $offset, $date);
         } elseif (in_array('sales_manager', $roles, true)) {
-            $items = $this->tasks->listMine($userId, $limit, $offset);
+            $items = $this->tasks->listMine($userId, $limit, $offset, $date);
         } else {
             $items = [];
         }

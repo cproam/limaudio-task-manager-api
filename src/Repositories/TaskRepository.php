@@ -68,12 +68,20 @@ class TaskRepository
         return $task;
     }
 
-    public function list(int $limit = 50, int $offset = 0): array
+    public function list(int $limit = 50, int $offset = 0, ?string $date = null): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM tasks ORDER BY id DESC LIMIT ? OFFSET ?');
-        $stmt->bindValue(1, $limit, PDO::PARAM_INT);
-        $stmt->bindValue(2, $offset, PDO::PARAM_INT);
-        $stmt->execute();
+        if ($date) {
+            $stmt = $this->pdo->prepare('SELECT * FROM tasks WHERE due_at LIKE ? ORDER BY id DESC LIMIT ? OFFSET ?');
+            $stmt->bindValue(1, $date . '%', PDO::PARAM_STR);
+            $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+            $stmt->bindValue(3, $offset, PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $stmt = $this->pdo->prepare('SELECT * FROM tasks ORDER BY id DESC LIMIT ? OFFSET ?');
+            $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+            $stmt->bindValue(2, $offset, PDO::PARAM_INT);
+            $stmt->execute();
+        }
         $items = $stmt->fetchAll();
         foreach ($items as &$t) {
             $tid = (int)$t['id'];
@@ -83,14 +91,24 @@ class TaskRepository
         return $items;
     }
 
-    public function listMine(int $userId, int $limit = 50, int $offset = 0): array
+    public function listMine(int $userId, int $limit = 50, int $offset = 0, ?string $date = null): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM tasks WHERE assigned_user_id = ? OR created_by = ? ORDER BY id DESC LIMIT ? OFFSET ?');
-        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
-        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
-        $stmt->bindValue(3, $limit, PDO::PARAM_INT);
-        $stmt->bindValue(4, $offset, PDO::PARAM_INT);
-        $stmt->execute();
+        if ($date) {
+            $stmt = $this->pdo->prepare('SELECT * FROM tasks WHERE (assigned_user_id = ? OR created_by = ?) AND due_at LIKE ? ORDER BY id DESC LIMIT ? OFFSET ?');
+            $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+            $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+            $stmt->bindValue(3, $date . '%', PDO::PARAM_STR);
+            $stmt->bindValue(4, $limit, PDO::PARAM_INT);
+            $stmt->bindValue(5, $offset, PDO::PARAM_INT);
+            $stmt->execute();
+        } else {
+            $stmt = $this->pdo->prepare('SELECT * FROM tasks WHERE assigned_user_id = ? OR created_by = ? ORDER BY id DESC LIMIT ? OFFSET ?');
+            $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+            $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+            $stmt->bindValue(3, $limit, PDO::PARAM_INT);
+            $stmt->bindValue(4, $offset, PDO::PARAM_INT);
+            $stmt->execute();
+        }
         $items = $stmt->fetchAll();
         foreach ($items as &$t) {
             $tid = (int)$t['id'];
