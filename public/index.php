@@ -99,6 +99,8 @@ $router->post('/webhook/telegram', fn(Request $r) => $webhook->telegram($r));
 $router->post('/users', fn(Request $r) => $users->create($r));
 $router->get('/users', fn(Request $r) => $users->list($r));
 $router->get('/users/{id}', fn(Request $r, array $p) => $users->get($r, $p));
+$router->put('/users/{id}', fn(Request $r, array $p) => $users->update($r, $p));
+$router->patch('/users/{id}', fn(Request $r, array $p) => $users->update($r, $p));
 
 // Auth
 $router->post('/auth/login', fn(Request $r) => $auth->login($r));

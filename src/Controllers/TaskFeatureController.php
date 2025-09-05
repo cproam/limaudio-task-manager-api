@@ -63,17 +63,42 @@ class TaskFeatureController
     {
         $limit = isset($req->query['limit']) ? max(1, (int)$req->query['limit']) : 50;
         $offset = isset($req->query['offset']) ? max(0, (int)$req->query['offset']) : 0;
-        $repo = $this->tasks;
-        $items = $repo->list($limit, $offset);
+        $claims = $GLOBALS['auth_user'] ?? null;
+        $roles = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
+        $userId = isset($claims['sub']) ? (int)$claims['sub'] : 0;
+
+        if (in_array('admin', $roles, true)) {
+            $items = $this->tasks->list($limit, $offset);
+        } elseif (in_array('sales_manager', $roles, true)) {
+            $items = $this->tasks->listMine($userId, $limit, $offset);
+        } else {
+            $items = [];
+        }
+
         return Response::json(['items' => $items, 'limit' => $limit, 'offset' => $offset]);
     }
 
     public function get(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
+        $claims = $GLOBALS['auth_user'] ?? null;
+        $roles = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
+        $userId = isset($claims['sub']) ? (int)$claims['sub'] : 0;
+
         $task = $this->tasks->get($id);
         if (!$task) return Response::json(['error' => 'Not Found'], 404);
-        return Response::json($task);
+        // Visibility: admin => any; sales_manager => own or created_by; others => deny
+        if (in_array('admin', $roles, true)) {
+            return Response::json($task);
+        }
+        if (in_array('sales_manager', $roles, true)) {
+            $assigned = isset($task['assigned_user_id']) ? (int)$task['assigned_user_id'] : 0;
+            $created = isset($task['created_by']) ? (int)$task['created_by'] : 0;
+            if ($assigned === $userId || $created === $userId) {
+                return Response::json($task);
+            }
+        }
+        return Response::json(['error' => 'Forbidden'], 403);
     }
 
     public function addComment(Request $req, array $params)

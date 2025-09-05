@@ -67,4 +67,39 @@ class UserController
         if (!$user) return Response::json(['error' => 'Not Found'], 404);
         return Response::json($user);
     }
+
+    public function update(Request $req, array $params)
+    {
+        // Admin-only
+        $claims = $GLOBALS['auth_user'] ?? null;
+        $rolesClaim = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
+        if (!in_array('admin', $rolesClaim, true)) {
+            return Response::json(['error' => 'admin role required'], 403);
+        }
+
+        $id = (int)($params['id'] ?? 0);
+        $payload = $req->body;
+        $fields = [];
+        if (array_key_exists('name', $payload)) $fields['name'] = (string)$payload['name'];
+        if (array_key_exists('email', $payload)) $fields['email'] = strtolower((string)$payload['email']);
+        if (array_key_exists('telegram_id', $payload)) $fields['telegram_id'] = $payload['telegram_id'] === null ? null : (string)$payload['telegram_id'];
+        if (array_key_exists('password', $payload)) $fields['password'] = (string)$payload['password'];
+        $roles = null;
+        if (array_key_exists('roles', $payload)) {
+            $roles = is_array($payload['roles']) ? array_values(array_intersect($payload['roles'], ['admin', 'sales_manager'])) : [];
+        }
+
+        if (isset($fields['email'])) {
+            if (!filter_var($fields['email'], FILTER_VALIDATE_EMAIL)) {
+                return Response::json(['error' => 'invalid email'], 422);
+            }
+            if ($this->users->emailExists($fields['email'], $id)) {
+                return Response::json(['error' => 'email already exists'], 409);
+            }
+        }
+
+        $updated = $this->users->update($id, $fields, $roles);
+        if (!$updated) return Response::json(['error' => 'Not Found'], 404);
+        return Response::json($updated);
+    }
 }

@@ -74,6 +74,53 @@ class UserRepository
         }
     }
 
+    public function replaceRoles(int $userId, array $roles): void
+    {
+        $this->pdo->prepare('DELETE FROM user_roles WHERE user_id=?')->execute([$userId]);
+        $this->assignRoles($userId, $roles);
+    }
+
+    public function emailExists(string $email, ?int $excludeId = null): bool
+    {
+        if ($excludeId) {
+            $stmt = $this->pdo->prepare('SELECT 1 FROM users WHERE email=? AND id<>? LIMIT 1');
+            $stmt->execute([$email, $excludeId]);
+        } else {
+            $stmt = $this->pdo->prepare('SELECT 1 FROM users WHERE email=? LIMIT 1');
+            $stmt->execute([$email]);
+        }
+        return (bool)$stmt->fetchColumn();
+    }
+
+    public function update(int $id, array $fields, ?array $roles = null): ?array
+    {
+        $user = $this->findById($id);
+        if (!$user) return null;
+
+        $sets = [];
+        $vals = [];
+        if (isset($fields['name'])) { $sets[] = 'name=?'; $vals[] = (string)$fields['name']; }
+        if (isset($fields['email'])) { $sets[] = 'email=?'; $vals[] = strtolower((string)$fields['email']); }
+        if (isset($fields['telegram_id'])) { $sets[] = 'telegram_id=?'; $vals[] = $fields['telegram_id'] !== null ? (string)$fields['telegram_id'] : null; }
+        if (isset($fields['password']) && $fields['password'] !== '') {
+            $sets[] = 'password_hash=?';
+            $vals[] = password_hash((string)$fields['password'], PASSWORD_DEFAULT);
+        }
+        if ($sets) {
+            $sets[] = 'updated_at=?';
+            $vals[] = gmdate('c');
+            $vals[] = $id;
+            $sql = 'UPDATE users SET ' . implode(',', $sets) . ' WHERE id=?';
+            $this->pdo->prepare($sql)->execute($vals);
+        }
+
+        if (is_array($roles)) {
+            $this->replaceRoles($id, $roles);
+        }
+
+        return $this->findById($id);
+    }
+
     private function resolveRoleIds(array $roles): array
     {
         $in = implode(',', array_fill(0, count($roles), '?'));

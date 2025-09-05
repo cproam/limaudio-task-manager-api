@@ -83,6 +83,23 @@ class TaskRepository
         return $items;
     }
 
+    public function listMine(int $userId, int $limit = 50, int $offset = 0): array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM tasks WHERE assigned_user_id = ? OR created_by = ? ORDER BY id DESC LIMIT ? OFFSET ?');
+        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(3, $limit, PDO::PARAM_INT);
+        $stmt->bindValue(4, $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $items = $stmt->fetchAll();
+        foreach ($items as &$t) {
+            $tid = (int)$t['id'];
+            $t['links'] = $this->getLinks($tid);
+            $t['files'] = $this->getFiles($tid);
+        }
+        return $items;
+    }
+
     public function addComment(int $taskId, int $userId = null, string $text = ''): array
     {
         $now = gmdate('c');
