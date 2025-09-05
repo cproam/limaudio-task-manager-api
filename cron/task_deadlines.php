@@ -62,7 +62,7 @@ foreach ($tasks as $t) {
         $msg = "⛔ Задача #{$id} ({$title}) — срок истёк";
         Telegram::send($msg);
         if (!empty($t['assignee_tg'])) { App\Notifications\Telegram::sendTo((string)$t['assignee_tg'], $msg); }
-        $pdo->prepare('UPDATE tasks SET notified_0=1 WHERE id=?')->execute([$id]);
+        $pdo->prepare('UPDATE tasks SET notified_0=1, status=?, updated_at=? WHERE id=?')->execute(['Задача просрочена', gmdate('c'), $id]);
     }
 }
 

@@ -91,6 +91,7 @@ $router->get('/task', fn(Request $r) => $taskFeature->list($r));
 $router->get('/task/{id}', fn(Request $r, array $p) => $taskFeature->get($r, $p));
 $router->post('/task/{id}/comments', fn(Request $r, array $p) => $taskFeature->addComment($r, $p));
 $router->post('/task/{id}/files', fn(Request $r, array $p) => $taskFeature->attachFile($r, $p));
+$router->patch('/task/{id}/status', fn(Request $r, array $p) => $taskFeature->updateStatus($r, $p));
 
 // Telegram webhook (public)
 $router->post('/webhook/telegram', fn(Request $r) => $webhook->telegram($r));

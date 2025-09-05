@@ -41,19 +41,29 @@ class TaskFeatureController
 
         // Notify Telegram: duplicate to admin chat AND personally to assignee (if set)
         $title = htmlspecialchars($task['title'] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $msg = "🆕 Новая задача: <b>{$title}</b>\nСтатус: {$task['status']}\nID: {$task['id']}";
+        $descRaw = (string)($task['description'] ?? '');
+        $desc = $descRaw !== '' ? htmlspecialchars($descRaw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
         $assigneeId = $payload['assigned_user_id'] ?? null;
+        $assigneeName = '';
+        $assigneeTg = null;
+        if ($assigneeId) {
+            $pdo = \App\Database\DB::conn();
+            $st = $pdo->prepare('SELECT name, telegram_id FROM users WHERE id=?');
+            $st->execute([(int)$assigneeId]);
+            $row = $st->fetch();
+            if ($row) {
+                $assigneeName = htmlspecialchars((string)$row['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $assigneeTg = $row['telegram_id'] ?? null;
+            }
+        }
+        $assigneeLine = $assigneeName !== '' ? "\nОтветственный: {$assigneeName}" : '';
+        $descLine = $desc !== '' ? "\nОписание: {$desc}" : '';
+        $msg = "🆕 Новая задача: <b>{$title}</b>{$descLine}{$assigneeLine}\nСтатус: {$task['status']}\nID: {$task['id']}";
         // Always send to admin chat (global)
         \App\Notifications\Telegram::send($msg);
         // Additionally, send personally to assignee if available
-        if ($assigneeId) {
-            $pdo = \App\Database\DB::conn();
-            $st = $pdo->prepare('SELECT telegram_id FROM users WHERE id=?');
-            $st->execute([(int)$assigneeId]);
-            $tg = $st->fetchColumn();
-            if ($tg) {
-                \App\Notifications\Telegram::sendTo((string)$tg, $msg);
-            }
+        if ($assigneeTg) {
+            \App\Notifications\Telegram::sendTo((string)$assigneeTg, $msg);
         }
 
         return Response::json($task, 201);
@@ -157,5 +167,59 @@ class TaskFeatureController
         }
         $rec = $this->tasks->attachFile($taskId, $fileName, $fileUrl);
         return Response::json($rec, 201);
+    }
+
+    public function updateStatus(Request $req, array $params)
+    {
+        $id = (int)($params['id'] ?? 0);
+        $status = (string)($req->body['status'] ?? '');
+        $allowed = ['Новая', 'Ответственный назначен', 'Задача принята в работу', 'Задача выполнена', 'Задача просрочена'];
+        if (!in_array($status, $allowed, true)) {
+            return Response::json(['error' => 'invalid status', 'allowed' => $allowed], 422);
+        }
+
+        // Enforce visibility rules: admin can change any; sales_manager only if own/created; others forbidden
+        $claims = $GLOBALS['auth_user'] ?? null;
+        $roles = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
+        $userId = isset($claims['sub']) ? (int)$claims['sub'] : 0;
+        $task = $this->tasks->get($id);
+        if (!$task) return Response::json(['error' => 'Not Found'], 404);
+        if (!in_array('admin', $roles, true)) {
+            if (in_array('sales_manager', $roles, true)) {
+                $assigned = isset($task['assigned_user_id']) ? (int)$task['assigned_user_id'] : 0;
+                $created = isset($task['created_by']) ? (int)$task['created_by'] : 0;
+                if (!($assigned === $userId || $created === $userId)) {
+                    return Response::json(['error' => 'Forbidden'], 403);
+                }
+            } else {
+                return Response::json(['error' => 'Forbidden'], 403);
+            }
+        }
+
+        $updated = $this->tasks->updateStatus($id, $status);
+        if (!$updated) return Response::json(['error' => 'Not Found'], 404);
+        // Notify Telegram about status change (admin chat + assignee personal)
+        $title = htmlspecialchars((string)($updated['title'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $descRaw = (string)($updated['description'] ?? '');
+        $desc = $descRaw !== '' ? htmlspecialchars($descRaw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
+        $assigneeId = isset($updated['assigned_user_id']) ? (int)$updated['assigned_user_id'] : null;
+        $assigneeName = '';
+        $assigneeTg = null;
+        if ($assigneeId) {
+            $pdo = \App\Database\DB::conn();
+            $st = $pdo->prepare('SELECT name, telegram_id FROM users WHERE id=?');
+            $st->execute([$assigneeId]);
+            $row = $st->fetch();
+            if ($row) {
+                $assigneeName = htmlspecialchars((string)$row['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $assigneeTg = $row['telegram_id'] ?? null;
+            }
+        }
+        $assigneeLine = $assigneeName !== '' ? "\nОтветственный: {$assigneeName}" : '';
+        $descLine = $desc !== '' ? "\nОписание: {$desc}" : '';
+        $msg = "🔄 Обновление статуса задачи #{$id}: <b>{$status}</b>\n<b>{$title}</b>{$descLine}{$assigneeLine}";
+        \App\Notifications\Telegram::send($msg);
+        if ($assigneeTg) { \App\Notifications\Telegram::sendTo((string)$assigneeTg, $msg); }
+        return Response::json($updated);
     }
 }

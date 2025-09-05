@@ -123,6 +123,14 @@ class TaskRepository
         return $stmt->rowCount() > 0;
     }
 
+    public function updateStatus(int $taskId, string $status): ?array
+    {
+        $stmt = $this->pdo->prepare('UPDATE tasks SET status=?, updated_at=? WHERE id=?');
+        $stmt->execute([$status, gmdate('c'), $taskId]);
+        if ($stmt->rowCount() === 0) return null;
+        return $this->get($taskId);
+    }
+
     private function getLinks(int $taskId): array
     {
         $stmt = $this->pdo->prepare('SELECT url FROM task_links WHERE task_id=?');
