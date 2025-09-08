@@ -24,6 +24,7 @@ use App\Controllers\AuthController;
 use App\Controllers\UploadController;
 use App\Controllers\TaskFeatureController;
 use App\Controllers\WebhookController;
+use App\Controllers\DirectionsController;
 use App\Database\DB;
 use App\Support\Env;
 use App\Security\Auth;
@@ -53,6 +54,7 @@ $auth = new AuthController();
 $upload = new UploadController();
 $taskFeature = new TaskFeatureController();
 $webhook = new WebhookController();
+$directions = new DirectionsController();
 
 // Ensure DB is migrated
 DB::migrate();
@@ -92,6 +94,13 @@ $router->get('/task/{id}', fn(Request $r, array $p) => $taskFeature->get($r, $p)
 $router->post('/task/{id}/comments', fn(Request $r, array $p) => $taskFeature->addComment($r, $p));
 $router->post('/task/{id}/files', fn(Request $r, array $p) => $taskFeature->attachFile($r, $p));
 $router->patch('/task/{id}/status', fn(Request $r, array $p) => $taskFeature->updateStatus($r, $p));
+
+// Directions
+$router->get('/directions', fn(Request $r) => $directions->list($r));
+$router->post('/directions', fn(Request $r) => $directions->create($r));
+$router->put('/directions/{id}', fn(Request $r, array $p) => $directions->update($r, $p));
+$router->patch('/directions/{id}', fn(Request $r, array $p) => $directions->update($r, $p));
+$router->delete('/directions/{id}', fn(Request $r, array $p) => $directions->delete($r, $p));
 
 // Telegram webhook (public)
 $router->post('/webhook/telegram', fn(Request $r) => $webhook->telegram($r));
