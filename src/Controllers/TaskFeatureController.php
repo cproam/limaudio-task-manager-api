@@ -230,4 +230,13 @@ class TaskFeatureController
         if ($assigneeTg) { \App\Notifications\Telegram::sendTo((string)$assigneeTg, $msg); }
         return Response::json($updated);
     }
+
+    public function patchTask(Request $req, array $params)
+    {
+        $id = (int)($params['id'] ?? 0);
+        $deadline = (string)($req->body['deadline']);
+        $updated = $this->tasks->patchDeadline($id, $deadline);
+        return Response::json($updated);
+    }
+    
 }
