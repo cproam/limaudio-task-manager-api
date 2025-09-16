@@ -26,31 +26,33 @@ class Router
                 $attributes = $method->getAttributes(Route::class);
                 if (empty($attributes)) continue;
 
-                $routeAttr = $attributes[0]->newInstance();
-                $methodName = $method->getName();
-                $handler = function (Request $req, array $params = []) use ($controllerClass, $methodName) {
-                    $controller = new $controllerClass();
-                    return $controller->$methodName($req, $params);
-                };
-
-                // Check for RequireRole
-                $roleAttributes = $method->getAttributes(RequireRole::class);
-                if (!empty($roleAttributes)) {
-                    $roleAttr = $roleAttributes[0]->newInstance();
-                    $requiredRole = $roleAttr->role;
-                    $originalHandler = $handler;
-                    $handler = function (Request $req, array $params = []) use ($originalHandler, $requiredRole) {
-                        $claims = $GLOBALS['auth_user'] ?? null;
-                        $roles = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
-                        if (!in_array($requiredRole, $roles, true)) {
-                            Response::json(['error' => "{$requiredRole} role required"], 403);
-                            exit;
-                        }
-                        return $originalHandler($req, $params);
+                foreach ($attributes as $attr) {
+                    $routeAttr = $attr->newInstance();
+                    $methodName = $method->getName();
+                    $handler = function (Request $req, array $params = []) use ($controllerClass, $methodName) {
+                        $controller = new $controllerClass();
+                        return $controller->$methodName($req, $params);
                     };
-                }
 
-                $this->add($routeAttr->method, $routeAttr->path, $handler);
+                    // Check for RequireRole
+                    $roleAttributes = $method->getAttributes(RequireRole::class);
+                    if (!empty($roleAttributes)) {
+                        $roleAttr = $roleAttributes[0]->newInstance();
+                        $requiredRole = $roleAttr->role;
+                        $originalHandler = $handler;
+                        $handler = function (Request $req, array $params = []) use ($originalHandler, $requiredRole) {
+                            $claims = $GLOBALS['auth_user'] ?? null;
+                            $roles = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
+                            if (!in_array($requiredRole, $roles, true)) {
+                                Response::json(['error' => "{$requiredRole} role required"], 403);
+                                exit;
+                            }
+                            return $originalHandler($req, $params);
+                        };
+                    }
+
+                    $this->add($routeAttr->method, $routeAttr->path, $handler);
+                }
             }
         }
     }
@@ -65,11 +67,26 @@ class Router
         ];
     }
 
-    public function get(string $path, callable $handler): void { $this->add('GET', $path, $handler); }
-    public function post(string $path, callable $handler): void { $this->add('POST', $path, $handler); }
-    public function put(string $path, callable $handler): void { $this->add('PUT', $path, $handler); }
-    public function patch(string $path, callable $handler): void { $this->add('PATCH', $path, $handler); }
-    public function delete(string $path, callable $handler): void { $this->add('DELETE', $path, $handler); }
+    public function get(string $path, callable $handler): void
+    {
+        $this->add('GET', $path, $handler);
+    }
+    public function post(string $path, callable $handler): void
+    {
+        $this->add('POST', $path, $handler);
+    }
+    public function put(string $path, callable $handler): void
+    {
+        $this->add('PUT', $path, $handler);
+    }
+    public function patch(string $path, callable $handler): void
+    {
+        $this->add('PATCH', $path, $handler);
+    }
+    public function delete(string $path, callable $handler): void
+    {
+        $this->add('DELETE', $path, $handler);
+    }
 
     public function dispatch(Request $request): void
     {
