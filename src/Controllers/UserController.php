@@ -63,8 +63,8 @@ class UserController
         return Response::json($user);
     }
 
-    #[Route('PUT', '/users/{id}')]
     #[Route('PATCH', '/users/{id}')]
+    #[Route('PUT', '/users/{id}')]
     #[RequireRole('admin')]
     public function update(Request $req, array $params)
     {
