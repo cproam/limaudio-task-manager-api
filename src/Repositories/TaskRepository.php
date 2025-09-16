@@ -161,6 +161,12 @@ class TaskRepository
         return $this->get($taskId);
     }
 
+    public function delete(int $taskId) {
+        $stmt = $this->pdo->prepare('DELETE FROM tasks WHERE id=?');
+        $stmt->execute([$taskId]);
+        return $stmt->rowCount() > 0;
+    }
+
     private function getLinks(int $taskId): array
     {
         $stmt = $this->pdo->prepare('SELECT url FROM task_links WHERE task_id=?');
@@ -181,4 +187,6 @@ class TaskRepository
         $stmt->execute([$taskId]);
         return $stmt->fetchAll();
     }
+
+    
 }

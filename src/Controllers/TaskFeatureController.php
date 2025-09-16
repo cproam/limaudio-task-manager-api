@@ -5,17 +5,32 @@ namespace App\Controllers;
 use App\Http\Request;
 use App\Http\Response;
 use App\Repositories\TaskRepository;
-use App\Notifications\Telegram;
+use App\Services\TaskNotificationService;
+use App\Validators\TaskValidator;
+use App\Routing\Route;
 
 class TaskFeatureController
 {
     private TaskRepository $tasks;
+    private TaskValidator $validator;
 
     public function __construct()
     {
         $this->tasks = new TaskRepository();
+        $this->validator = new TaskValidator();
     }
 
+    private function getAssigneeInfo(?int $assigneeId): array
+    {
+        if (!$assigneeId) return ['', null];
+        $pdo = \App\Database\DB::conn();
+        $st = $pdo->prepare('SELECT name, telegram_id FROM users WHERE id=?');
+        $st->execute([$assigneeId]);
+        $row = $st->fetch();
+        return $row ? [htmlspecialchars((string)$row['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $row['telegram_id']] : ['', null];
+    }
+
+    #[Route('POST', '/task')]
     public function create(Request $req)
     {
         $claims = $GLOBALS['auth_user'] ?? null;
@@ -25,6 +40,13 @@ class TaskFeatureController
         // Validate
         $title = trim((string)($data['title'] ?? ''));
         if ($title === '') return Response::json(['error' => 'title is required'], 422);
+
+        // Валидация через слой
+        $errors = $this->validator->validateCreate($data);
+        if (!empty($errors)) {
+            Response::json(['errors' => $errors], 422);
+            exit;
+        }
 
         $payload = [
             'title' => $title,
@@ -40,35 +62,14 @@ class TaskFeatureController
         $task = $this->tasks->create($payload);
 
         // Notify Telegram: duplicate to admin chat AND personally to assignee (if set)
-        $title = htmlspecialchars($task['title'] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $descRaw = (string)($task['description'] ?? '');
-        $desc = $descRaw !== '' ? htmlspecialchars($descRaw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
         $assigneeId = $payload['assigned_user_id'] ?? null;
-        $assigneeName = '';
-        $assigneeTg = null;
-        if ($assigneeId) {
-            $pdo = \App\Database\DB::conn();
-            $st = $pdo->prepare('SELECT name, telegram_id FROM users WHERE id=?');
-            $st->execute([(int)$assigneeId]);
-            $row = $st->fetch();
-            if ($row) {
-                $assigneeName = htmlspecialchars((string)$row['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                $assigneeTg = $row['telegram_id'] ?? null;
-            }
-        }
-        $assigneeLine = $assigneeName !== '' ? "\nОтветственный: {$assigneeName}" : '';
-        $descLine = $desc !== '' ? "\nОписание: {$desc}" : '';
-        $msg = "🆕 Новая задача: <b>{$title}</b>{$descLine}{$assigneeLine}\nСтатус: {$task['status']}\nID: {$task['id']}";
-        // Always send to admin chat (global)
-        \App\Notifications\Telegram::send($msg);
-        // Additionally, send personally to assignee if available
-        if ($assigneeTg) {
-            \App\Notifications\Telegram::sendTo((string)$assigneeTg, $msg);
-        }
+        [$assigneeName, $assigneeTg] = $this->getAssigneeInfo($assigneeId);
+        TaskNotificationService::notifyTaskCreated($task, $assigneeName, $assigneeTg);
 
         return Response::json($task, 201);
     }
 
+    #[Route('GET', '/task')]
     public function list(Request $req)
     {
         $limit = isset($req->query['limit']) ? max(1, (int)$req->query['limit']) : 50;
@@ -96,6 +97,7 @@ class TaskFeatureController
         return Response::json(['items' => $items, 'limit' => $limit, 'offset' => $offset]);
     }
 
+    #[Route('GET', '/task/{id}')] // <-- Here is the suggested change incorporated
     public function get(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
@@ -119,6 +121,7 @@ class TaskFeatureController
         return Response::json(['error' => 'Forbidden'], 403);
     }
 
+    #[Route('POST', '/task/{id}/comments')]
     public function addComment(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
@@ -127,20 +130,12 @@ class TaskFeatureController
         $text = trim((string)($req->body['text'] ?? ''));
         if ($text === '') return Response::json(['error' => 'text is required'], 422);
         $comment = $this->tasks->addComment($id, $userId, $text);
-        $msg = "💬 Новый комментарий к задаче #{$id}:\n" . $text;
-        // Always notify admin chat
-        Telegram::send($msg);
-        // Notify assignee personally if set
-        $pdo = \App\Database\DB::conn();
-        $st = $pdo->prepare('SELECT u.telegram_id FROM tasks t LEFT JOIN users u ON u.id=t.assigned_user_id WHERE t.id=?');
-        $st->execute([$id]);
-        $tg = $st->fetchColumn();
-        if ($tg) {
-            \App\Notifications\Telegram::sendTo((string)$tg, $msg);
-        }
+        $tg = TaskNotificationService::getAssigneeTg($id);
+        TaskNotificationService::notifyCommentAdded($id, $text, $tg);
         return Response::json($comment, 201);
     }
 
+    #[Route('POST', '/task/{id}/files')]
     public function attachFile(Request $req, array $params)
     {
         $taskId = (int)($params['id'] ?? 0);
@@ -177,13 +172,16 @@ class TaskFeatureController
         return Response::json($rec, 201);
     }
 
+    #[Route('PATCH', '/task/{id}/status')]
     public function updateStatus(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
         $status = (string)($req->body['status'] ?? '');
-        $allowed = ['Новая', 'Ответственный назначен', 'Задача принята в работу', 'Задача выполнена', 'Задача просрочена'];
-        if (!in_array($status, $allowed, true)) {
-            return Response::json(['error' => 'invalid status', 'allowed' => $allowed], 422);
+        
+        // Валидация статуса через валидатор
+        if (!$this->validator->validateStatus($status)) {
+            Response::json(['error' => 'Invalid status'], 422);
+            exit;
         }
 
         // Enforce visibility rules: admin can change any; sales_manager only if own/created; others forbidden
@@ -207,30 +205,13 @@ class TaskFeatureController
         $updated = $this->tasks->updateStatus($id, $status);
         if (!$updated) return Response::json(['error' => 'Not Found'], 404);
         // Notify Telegram about status change (admin chat + assignee personal)
-        $title = htmlspecialchars((string)($updated['title'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $descRaw = (string)($updated['description'] ?? '');
-        $desc = $descRaw !== '' ? htmlspecialchars($descRaw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
         $assigneeId = isset($updated['assigned_user_id']) ? (int)$updated['assigned_user_id'] : null;
-        $assigneeName = '';
-        $assigneeTg = null;
-        if ($assigneeId) {
-            $pdo = \App\Database\DB::conn();
-            $st = $pdo->prepare('SELECT name, telegram_id FROM users WHERE id=?');
-            $st->execute([$assigneeId]);
-            $row = $st->fetch();
-            if ($row) {
-                $assigneeName = htmlspecialchars((string)$row['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                $assigneeTg = $row['telegram_id'] ?? null;
-            }
-        }
-        $assigneeLine = $assigneeName !== '' ? "\nОтветственный: {$assigneeName}" : '';
-        $descLine = $desc !== '' ? "\nОписание: {$desc}" : '';
-        $msg = "🔄 Обновление статуса задачи #{$id}: <b>{$status}</b>\n<b>{$title}</b>{$descLine}{$assigneeLine}";
-        \App\Notifications\Telegram::send($msg);
-        if ($assigneeTg) { \App\Notifications\Telegram::sendTo((string)$assigneeTg, $msg); }
+        [$assigneeName, $assigneeTg] = $this->getAssigneeInfo($assigneeId);
+        TaskNotificationService::notifyStatusChanged($id, $status, $updated['title'], $updated['description'] ?? '', $assigneeName, $assigneeTg);
         return Response::json($updated);
     }
 
+    #[Route('PATCH', '/task/{id}')] // <-- Suggested change incorporated
     public function patchTask(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
@@ -238,5 +219,15 @@ class TaskFeatureController
         $updated = $this->tasks->patchDeadline($id, $deadline);
         return Response::json($updated);
     }
-    
+
+    #[Route('DELETE', '/task/{id}')] // <-- Route attribute added to delete method
+    public function delete(Request $req, array $params)
+    {
+        $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            return Response::json(['error' => 'неверный id'], 500);
+        }
+        $deleted = $this->tasks->delete($id);
+        return Response::json(['deleted' => $deleted]);
+    }
 }

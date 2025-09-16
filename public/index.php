@@ -18,8 +18,6 @@ if (file_exists($composerAutoload)) {
 use App\Http\Request;
 use App\Http\Response;
 use App\Routing\Router;
-use App\Controllers\TaskController;
-use App\Controllers\UserController;
 use App\Controllers\AuthController;
 use App\Controllers\UploadController;
 use App\Controllers\TaskFeatureController;
@@ -48,13 +46,6 @@ Env::load($projectRoot . '/.env');
 
 $request = new Request();
 $router = new Router();
-$tasks = new TaskController();
-$users = new UserController();
-$auth = new AuthController();
-$upload = new UploadController();
-$taskFeature = new TaskFeatureController();
-$webhook = new WebhookController();
-$directions = new DirectionsController();
 
 // Ensure DB is migrated
 DB::migrate();
@@ -79,42 +70,14 @@ $router->get('/', function () {
 	return ['status' => 'ok', 'service' => 'limaudio-task-manager-api'];
 });
 
-$router->get('/tasks', fn(Request $r) => $tasks->list($r));
-$router->get('/tasks/{id}', fn(Request $r, array $p) => $tasks->get($r, $p));
-$router->post('/tasks', fn(Request $r) => $tasks->create($r));
-$router->put('/tasks/{id}', fn(Request $r, array $p) => $tasks->update($r, $p));
-$router->patch('/tasks/{id}', fn(Request $r, array $p) => $tasks->update($r, $p));
-$router->delete('/tasks/{id}', fn(Request $r, array $p) => $tasks->delete($r, $p));
-
-// New Task feature routes
-$router->post('/upload', fn(Request $r) => $upload->upload($r));
-$router->post('/task', fn(Request $r) => $taskFeature->create($r));
-$router->get('/task', fn(Request $r) => $taskFeature->list($r));
-$router->get('/task/{id}', fn(Request $r, array $p) => $taskFeature->get($r, $p));
-$router->patch('/task/{id}', fn(Request $r, array $p) => $taskFeature->patchTask($r, $p));
-$router->post('/task/{id}/comments', fn(Request $r, array $p) => $taskFeature->addComment($r, $p));
-$router->post('/task/{id}/files', fn(Request $r, array $p) => $taskFeature->attachFile($r, $p));
-$router->patch('/task/{id}/status', fn(Request $r, array $p) => $taskFeature->updateStatus($r, $p));
-
-// Directions
-$router->get('/directions', fn(Request $r) => $directions->list($r));
-$router->post('/directions', fn(Request $r) => $directions->create($r));
-$router->put('/directions/{id}', fn(Request $r, array $p) => $directions->update($r, $p));
-$router->patch('/directions/{id}', fn(Request $r, array $p) => $directions->update($r, $p));
-$router->delete('/directions/{id}', fn(Request $r, array $p) => $directions->delete($r, $p));
-
-// Telegram webhook (public)
-$router->post('/webhook/telegram', fn(Request $r) => $webhook->telegram($r));
-
-// User routes
-$router->post('/users', fn(Request $r) => $users->create($r));
-$router->get('/users', fn(Request $r) => $users->list($r));
-$router->get('/users/{id}', fn(Request $r, array $p) => $users->get($r, $p));
-$router->put('/users/{id}', fn(Request $r, array $p) => $users->update($r, $p));
-$router->patch('/users/{id}', fn(Request $r, array $p) => $users->update($r, $p));
-
-// Auth
-$router->post('/auth/login', fn(Request $r) => $auth->login($r));
+// Scan controllers for routes and roles
+$router->scanControllers([
+	AuthController::class,
+	UploadController::class,
+	TaskFeatureController::class,
+	WebhookController::class,
+	DirectionsController::class,
+]);
 
 $router->dispatch($request);
 

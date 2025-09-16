@@ -5,10 +5,12 @@ namespace App\Controllers;
 use App\Http\Request;
 use App\Http\Response;
 use App\Notifications\Telegram;
+use App\Routing\Route;
 
 class WebhookController
 {
     // Telegram webhook endpoint
+    #[Route('POST', '/webhook/telegram')]
     public function telegram(Request $req)
     {
         $update = $req->body;

@@ -1,0 +1,81 @@
+<?php
+
+namespace App\Services;
+
+use App\Notifications\Telegram;
+use App\Database\DB;
+
+class TaskNotificationService
+{
+    /**
+     * Уведомление о создании задачи
+     */
+    public static function notifyTaskCreated(array $task, string $assigneeName = '', ?string $assigneeTg = null): void
+    {
+        $title = htmlspecialchars($task['title'] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $descRaw = (string)($task['description'] ?? '');
+        $desc = $descRaw !== '' ? htmlspecialchars($descRaw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
+        $assigneeLine = $assigneeName !== '' ? "\nОтветственный: {$assigneeName}" : '';
+        $descLine = $desc !== '' ? "\nОписание: {$desc}" : '';
+        $msg = "🆕 Новая задача: <b>{$title}</b>{$descLine}{$assigneeLine}\nСтатус: {$task['status']}\nID: {$task['id']}";
+        Telegram::send($msg);
+        if ($assigneeTg) {
+            Telegram::sendTo($assigneeTg, $msg);
+        }
+    }
+
+    /**
+     * Уведомление о новом комментарии
+     */
+    public static function notifyCommentAdded(int $taskId, string $commentText, ?string $assigneeTg = null): void
+    {
+        $msg = "💬 Новый комментарий к задаче #{$taskId}:\n" . $commentText;
+        Telegram::send($msg);
+        if ($assigneeTg) {
+            Telegram::sendTo($assigneeTg, $msg);
+        }
+    }
+
+    /**
+     * Уведомление об изменении статуса
+     */
+    public static function notifyStatusChanged(int $taskId, string $status, string $title, string $description = '', string $assigneeName = '', ?string $assigneeTg = null): void
+    {
+        $titleEsc = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $descEsc = $description !== '' ? htmlspecialchars($description, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
+        $assigneeLine = $assigneeName !== '' ? "\nОтветственный: {$assigneeName}" : '';
+        $descLine = $descEsc !== '' ? "\nОписание: {$descEsc}" : '';
+        $msg = "🔄 Обновление статуса задачи #{$taskId}: <b>{$status}</b>\n<b>{$titleEsc}</b>{$descLine}{$assigneeLine}";
+        Telegram::send($msg);
+        if ($assigneeTg) {
+            Telegram::sendTo($assigneeTg, $msg);
+        }
+    }
+
+    /**
+     * Уведомление о дедлайне
+     */
+    public static function notifyDeadline(int $taskId, string $title, float $leftDays, ?string $assigneeTg = null): void
+    {
+        $msg = match (true) {
+            $leftDays <= 0 => "⛔ Задача #{$taskId} ({$title}) — срок истёк",
+            $leftDays <= 1 => "⚠️ Задача #{$taskId} ({$title}) — дедлайн через {$leftDays} день",
+            default => "⚠️ Задача #{$taskId} ({$title}) — дедлайн через {$leftDays} дней"
+        };
+        Telegram::send($msg);
+        if ($assigneeTg) {
+            Telegram::sendTo($assigneeTg, $msg);
+        }
+    }
+
+    /**
+     * Получить telegram_id ответственного по taskId
+     */
+    public static function getAssigneeTg(int $taskId): ?string
+    {
+        $pdo = DB::conn();
+        $st = $pdo->prepare('SELECT u.telegram_id FROM tasks t LEFT JOIN users u ON u.id=t.assigned_user_id WHERE t.id=?');
+        $st->execute([$taskId]);
+        return $st->fetchColumn() ?: null;
+    }
+}

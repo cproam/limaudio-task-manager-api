@@ -18,6 +18,43 @@ class Router
         $this->beforeEach = $handler;
     }
 
+    public function scanControllers(array $controllers): void
+    {
+        foreach ($controllers as $controllerClass) {
+            $reflection = new \ReflectionClass($controllerClass);
+            foreach ($reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+                $attributes = $method->getAttributes(Route::class);
+                if (empty($attributes)) continue;
+
+                $routeAttr = $attributes[0]->newInstance();
+                $methodName = $method->getName();
+                $handler = function (Request $req, array $params = []) use ($controllerClass, $methodName) {
+                    $controller = new $controllerClass();
+                    return $controller->$methodName($req, $params);
+                };
+
+                // Check for RequireRole
+                $roleAttributes = $method->getAttributes(RequireRole::class);
+                if (!empty($roleAttributes)) {
+                    $roleAttr = $roleAttributes[0]->newInstance();
+                    $requiredRole = $roleAttr->role;
+                    $originalHandler = $handler;
+                    $handler = function (Request $req, array $params = []) use ($originalHandler, $requiredRole) {
+                        $claims = $GLOBALS['auth_user'] ?? null;
+                        $roles = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
+                        if (!in_array($requiredRole, $roles, true)) {
+                            Response::json(['error' => "{$requiredRole} role required"], 403);
+                            exit;
+                        }
+                        return $originalHandler($req, $params);
+                    };
+                }
+
+                $this->add($routeAttr->method, $routeAttr->path, $handler);
+            }
+        }
+    }
+
     public function add(string $method, string $path, callable $handler): void
     {
         $method = strtoupper($method);

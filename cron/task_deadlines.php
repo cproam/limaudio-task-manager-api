@@ -20,7 +20,7 @@ else {
 
 use App\Database\DB;
 use App\Support\Env;
-use App\Notifications\Telegram;
+use App\Services\TaskNotificationService;
 
 Env::load($root . '/.env');
 DB::migrate();
@@ -42,26 +42,21 @@ foreach ($tasks as $t) {
 
     $id = (int)$t['id'];
     $title = $t['title'];
+    $leftDays = $left / (24 * 3600);
 
     // 30%
     if ($pctLeft <= 0.30 && !$t['notified_30'] && $left > 0) {
-        $msg = "⏳ Задача #{$id} ({$title}) — осталось ~30% времени";
-        Telegram::send($msg);
-        if (!empty($t['assignee_tg'])) { App\Notifications\Telegram::sendTo((string)$t['assignee_tg'], $msg); }
+        TaskNotificationService::notifyDeadline($id, $title, $leftDays, $t['assignee_tg']);
         $pdo->prepare('UPDATE tasks SET notified_30=1 WHERE id=?')->execute([$id]);
     }
     // 10%
     if ($pctLeft <= 0.10 && !$t['notified_10'] && $left > 0) {
-        $msg = "⚠️ Задача #{$id} ({$title}) — осталось ~10% времени";
-        Telegram::send($msg);
-        if (!empty($t['assignee_tg'])) { App\Notifications\Telegram::sendTo((string)$t['assignee_tg'], $msg); }
+        TaskNotificationService::notifyDeadline($id, $title, $leftDays, $t['assignee_tg']);
         $pdo->prepare('UPDATE tasks SET notified_10=1 WHERE id=?')->execute([$id]);
     }
     // 0% or overdue
     if ($left <= 0 && !$t['notified_0']) {
-        $msg = "⛔ Задача #{$id} ({$title}) — срок истёк";
-        Telegram::send($msg);
-        if (!empty($t['assignee_tg'])) { App\Notifications\Telegram::sendTo((string)$t['assignee_tg'], $msg); }
+        TaskNotificationService::notifyDeadline($id, $title, $leftDays, $t['assignee_tg']);
         $pdo->prepare('UPDATE tasks SET notified_0=1, status=?, updated_at=? WHERE id=?')->execute(['Задача просрочена', gmdate('c'), $id]);
     }
 }

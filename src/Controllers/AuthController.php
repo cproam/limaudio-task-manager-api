@@ -6,9 +6,11 @@ use App\Http\Request;
 use App\Http\Response;
 use App\Database\DB;
 use App\Security\Jwt;
+use App\Routing\Route;
 
 class AuthController
 {
+    #[Route('POST', '/auth/login')]
     public function login(Request $req)
     {
         $data = $req->body;

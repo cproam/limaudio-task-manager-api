@@ -4,9 +4,11 @@ namespace App\Controllers;
 
 use App\Http\Request;
 use App\Http\Response;
+use App\Routing\Route;
 
 class UploadController
 {
+    #[Route('POST', '/upload')]
     public function upload(Request $req)
     {
         if (empty($_FILES['file'])) {
