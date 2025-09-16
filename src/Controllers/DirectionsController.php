@@ -43,7 +43,8 @@ class DirectionsController
         return Response::json($dir, 201);
     }
 
-    #[Route('PUT', '/directions/{id}'), Route('PATCH', '/directions/{id}')]
+    #[Route('PATCH', '/directions/{id}')]
+    #[Route('PUT', '/directions/{id}')]
     #[RequireRole('admin')]
     public function update(Request $req, array $params)
     {
