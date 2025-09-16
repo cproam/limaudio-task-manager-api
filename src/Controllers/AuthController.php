@@ -7,23 +7,37 @@ use App\Http\Response;
 use App\Database\DB;
 use App\Security\Jwt;
 use App\Routing\Route;
+use App\DTO\LoginDTO;
+use App\Validators\AuthValidator;
 
 class AuthController
 {
+    private AuthValidator $validator;
+
+    public function __construct()
+    {
+        $this->validator = new AuthValidator();
+    }
+
     #[Route('POST', '/auth/login')]
     public function login(Request $req)
     {
         $data = $req->body;
-        $email = strtolower(trim((string)($data['email'] ?? '')));
-        $password = (string)($data['password'] ?? '');
-        if ($email === '' || $password === '') {
-            return Response::json(['error' => 'email and password are required'], 422);
+
+        // Валидация через DTO
+        $dto = new LoginDTO();
+        $dto->email = strtolower(trim($data['email'] ?? ''));
+        $dto->password = $data['password'] ?? '';
+        $errors = $this->validator->validate($dto);
+        if (!empty($errors)) {
+            return Response::json(['errors' => $errors], 422);
         }
+
         $pdo = DB::conn();
         $stmt = $pdo->prepare('SELECT id,name,email,password_hash,telegram_id FROM users WHERE email=?');
-        $stmt->execute([$email]);
+        $stmt->execute([$dto->email]);
         $u = $stmt->fetch();
-        if (!$u || !password_verify($password, $u['password_hash'])) {
+        if (!$u || !password_verify($dto->password, $u['password_hash'])) {
             return Response::json(['error' => 'invalid credentials'], 401);
         }
         // Load roles

@@ -37,25 +37,26 @@ class TaskFeatureController
         $userId = isset($claims['sub']) ? (int)$claims['sub'] : null;
         $data = $req->body;
 
-        // Validate
-        $title = trim((string)($data['title'] ?? ''));
-        if ($title === '') return Response::json(['error' => 'title is required'], 422);
-
-        // Валидация через слой
-        $errors = $this->validator->validateCreate($data);
+        // Валидация через DTO и атрибуты
+        $dto = new \App\DTO\CreateTaskDTO();
+        foreach ($data as $key => $value) {
+            if (property_exists($dto, $key)) {
+                $dto->$key = $value;
+            }
+        }
+        $errors = $this->validator->validate($dto);
         if (!empty($errors)) {
-            Response::json(['errors' => $errors], 422);
-            exit;
+            return Response::json(['errors' => $errors], 422);
         }
 
         $payload = [
-            'title' => $title,
-            'description' => (string)($data['description'] ?? ''),
-            'direction_id' => isset($data['direction_id']) ? (int)$data['direction_id'] : null,
-            'due_at' => isset($data['due_at']) ? (string)$data['due_at'] : null,
-            'assigned_user_id' => isset($data['assigned_user_id']) ? (int)$data['assigned_user_id'] : null,
-            'links' => is_array($data['links'] ?? null) ? $data['links'] : [],
-            'files' => is_array($data['files'] ?? null) ? $data['files'] : [],
+            'title' => $dto->title,
+            'description' => $dto->description,
+            'direction_id' => $dto->direction_id,
+            'due_at' => $dto->due_at,
+            'assigned_user_id' => $dto->assigned_user_id,
+            'links' => $dto->links ?? [],
+            'files' => $dto->files ?? [],
             'created_by' => $userId,
         ];
 
@@ -178,10 +179,9 @@ class TaskFeatureController
         $id = (int)($params['id'] ?? 0);
         $status = (string)($req->body['status'] ?? '');
         
-        // Валидация статуса через валидатор
-        if (!$this->validator->validateStatus($status)) {
-            Response::json(['error' => 'Invalid status'], 422);
-            exit;
+        // Валидация статуса через enum
+        if (!\App\Enums\TaskStatus::isValid($status)) {
+            return Response::json(['error' => 'Invalid status'], 422);
         }
 
         // Enforce visibility rules: admin can change any; sales_manager only if own/created; others forbidden
