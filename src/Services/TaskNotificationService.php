@@ -55,13 +55,13 @@ class TaskNotificationService
     /**
      * Уведомление о дедлайне
      */
-    public static function notifyDeadline(int $taskId, string $title, float $leftDays, ?string $assigneeTg = null): void
+    public static function notifyDeadline(int $taskId, string $title, string $timeLeft, ?string $assigneeTg = null): void
     {
-        $msg = match (true) {
-            $leftDays <= 0 => "⛔ Задача #{$taskId} ({$title}) — срок истёк",
-            $leftDays <= 1 => "⚠️ Задача #{$taskId} ({$title}) — дедлайн через {$leftDays} день",
-            default => "⚠️ Задача #{$taskId} ({$title}) — дедлайн через {$leftDays} дней"
-        };
+        if (str_contains($timeLeft, 'Просрочено')) {
+            $msg = "⛔ Задача #{$taskId} ({$title}) — {$timeLeft}";
+        } else {
+            $msg = "⚠️ Задача #{$taskId} ({$title}) — дедлайн через {$timeLeft}";
+        }
         Telegram::send($msg);
         if ($assigneeTg) {
             Telegram::sendTo($assigneeTg, $msg);
