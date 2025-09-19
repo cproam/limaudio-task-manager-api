@@ -57,7 +57,7 @@ class TaskNotificationService
      */
     public static function notifyDeadline(int $taskId, string $title, string $timeLeft, ?string $assigneeTg = null): void
     {
-        if (str_contains($timeLeft, 'Просрочено')) {
+        if (str_contains($timeLeft, 'просрочено')) {
             $msg = "⛔ Задача #{$taskId} ({$title}) — {$timeLeft}";
         } else {
             $msg = "⚠️ Задача #{$taskId} ({$title}) — дедлайн через {$timeLeft}";

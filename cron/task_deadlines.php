@@ -56,7 +56,7 @@ foreach ($tasks as $t) {
     }
     
     if ($left < 0) {
-        $timeLeft = 'Просрочено на ' . $timeLeft;
+        $timeLeft = 'просрочено';
     }
 
     // 30%
