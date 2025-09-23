@@ -22,7 +22,7 @@ class RoleRepository
 
     public function findById(int $id): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT id, name FROM roles WHERE id=?');
+        $stmt = $this->pdo->prepare('SELECT id, name, description FROM roles WHERE id=?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         return $row ?: null;
