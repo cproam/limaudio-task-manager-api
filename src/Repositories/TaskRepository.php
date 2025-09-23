@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Database\DB;
+use App\Enums\TaskStatus;
 use PDO;
 
 class TaskRepository
@@ -118,7 +119,7 @@ class TaskRepository
         return $items;
     }
 
-    public function addComment(int $taskId, int $userId = null, string $text = ''): array
+    public function addComment(int $taskId, int $userId, string $text = ''): array
     {
         $now = gmdate('c');
         $stmt = $this->pdo->prepare('INSERT INTO comments(task_id,user_id,text,created_at) VALUES(?,?,?,?)');
@@ -152,9 +153,9 @@ class TaskRepository
     public function patchDeadline(int $taskId, string $deadline): ?array
     {
         $stmt = $this->pdo->prepare('UPDATE tasks SET due_at=?, updated_at=?, status=? WHERE id=?');
-        $status = 'Задача просрочена';
+        $status = TaskStatus::Overdue;
         if (strtotime($deadline) > time()) {
-            $status = 'Задача продлена';
+            $status = TaskStatus::InProgress;
         }
         $stmt->execute([$deadline, gmdate('c'), $status, $taskId]);
         if ($stmt->rowCount() === 0) return null;

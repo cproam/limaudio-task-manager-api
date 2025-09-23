@@ -6,7 +6,7 @@ enum TaskStatus: string
 {
     case New = 'Новая';
     case Assigned = 'Ответственный назначен';
-    case InProgress = 'Задача принята в работу';
+    case InProgress = 'Задача в работе';
     case Completed = 'Задача выполнена';
     case Overdue = 'Задача просрочена';
     case Extended = 'Задача продлена';
