@@ -68,6 +68,18 @@ class DB
         $stmt = $pdo->prepare('INSERT OR IGNORE INTO roles(name) VALUES (?), (?)');
         $stmt->execute(['admin', 'sales_manager']);
 
+        // Permissions
+        $pdo->exec('CREATE TABLE IF NOT EXISTS permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            role_id INTEGER NOT NULL,
+            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+        )');
+
+        // Seed permissions
+        $stmt = $pdo->prepare('INSERT OR IGNORE INTO permissions(name, role_id) VALUES (?, ?)');
+        $stmt->execute(['can_create_task', 1]);
+
         // Directions
         $pdo->exec('CREATE TABLE IF NOT EXISTS directions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
