@@ -52,7 +52,8 @@ class DB
 
         $pdo->exec('CREATE TABLE IF NOT EXISTS roles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE
+            name TEXT NOT NULL UNIQUE,
+            description TEXT
         )');
 
         $pdo->exec('CREATE TABLE IF NOT EXISTS user_roles (
