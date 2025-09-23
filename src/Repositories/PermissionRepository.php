@@ -16,13 +16,13 @@ class PermissionRepository
 
     public function listAll(): array
     {
-        $stmt = $this->pdo->query('SELECT id, name, role_id FROM permissions ORDER BY id ASC');
+        $stmt = $this->pdo->query('SELECT id, name, user_id, role_id FROM permissions ORDER BY id ASC');
         return $stmt->fetchAll();
     }
 
     public function findById(int $id): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT id, name, role_id FROM permissions WHERE id=?');
+        $stmt = $this->pdo->prepare('SELECT id, name, user_id, role_id FROM permissions WHERE id=?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         return $row ?: null;
