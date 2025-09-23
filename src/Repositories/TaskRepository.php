@@ -153,9 +153,9 @@ class TaskRepository
     public function patchDeadline(int $taskId, string $deadline): ?array
     {
         $stmt = $this->pdo->prepare('UPDATE tasks SET due_at=?, updated_at=?, status=? WHERE id=?');
-        $status = TaskStatus::Overdue;
+        $status = TaskStatus::Overdue->value;
         if (strtotime($deadline) > time()) {
-            $status = TaskStatus::InProgress;
+            $status = TaskStatus::InProgress->value;
         }
         $stmt->execute([$deadline, gmdate('c'), $status, $taskId]);
         if ($stmt->rowCount() === 0) return null;
