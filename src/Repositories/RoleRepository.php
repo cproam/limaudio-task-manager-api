@@ -40,18 +40,18 @@ class RoleRepository
         return (bool)$stmt->fetchColumn();
     }
 
-    public function create(string $name): array
+    public function create(string $name, string $description): array
     {
-        $stmt = $this->pdo->prepare('INSERT INTO roles(name) VALUES(?)');
-        $stmt->execute([$name]);
+        $stmt = $this->pdo->prepare('INSERT INTO roles(name, description) VALUES(?, ?)');
+        $stmt->execute([$name, $description]);
         $id = (int)$this->pdo->lastInsertId();
         return $this->findById($id);
     }
 
-    public function update(int $id, string $name): ?array
+    public function update(int $id, string $name, string $description): ?array
     {
-        $stmt = $this->pdo->prepare('UPDATE roles SET name=? WHERE id=?');
-        $stmt->execute([$name, $id]);
+        $stmt = $this->pdo->prepare('UPDATE roles SET name=? description=? WHERE id=?');
+        $stmt->execute([$name, $description, $id]);
         if ($stmt->rowCount() === 0) {
             // Could be same value or not found; check existence explicitly
             $existing = $this->findById($id);
