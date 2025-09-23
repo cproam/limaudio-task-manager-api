@@ -48,11 +48,11 @@ foreach ($tasks as $t) {
     $minutes = floor((abs($leftSeconds) % 3600) / 60);
     
     if ($days > 0) {
-        $timeLeft = $days . ' дней, ' . $hours . ' часов';
+        $timeLeft = $days . ' дн., ' . $hours . ' ч.';
     } elseif ($hours > 0) {
-        $timeLeft = $hours . ' часов, ' . $minutes . ' минут';
+        $timeLeft = $hours . ' ч., ' . $minutes . ' мин.';
     } else {
-        $timeLeft = $minutes . ' минут';
+        $timeLeft = $minutes . ' мин.';
     }
     
     if ($left < 0) {
