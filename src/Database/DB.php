@@ -72,13 +72,11 @@ class DB
         $pdo->exec('CREATE TABLE IF NOT EXISTS permissions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            role_id INTEGER NOT NULL,
+            user_id INTEGER,
+            role_id INTEGER,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
         )');
-
-        // Seed permissions
-        $stmt = $pdo->prepare('INSERT OR IGNORE INTO permissions(name, role_id) VALUES (?, ?)');
-        $stmt->execute(['can_create_task', 1]);
 
         // Directions
         $pdo->exec('CREATE TABLE IF NOT EXISTS directions (

@@ -23,6 +23,7 @@ use App\Controllers\UploadController;
 use App\Controllers\TaskFeatureController;
 use App\Controllers\WebhookController;
 use App\Controllers\DirectionsController;
+use App\Controllers\PermissionsController;
 use App\Controllers\RolesController;
 use App\Controllers\UserController;
 use App\Database\DB;
@@ -79,8 +80,9 @@ $router->scanControllers([
 	TaskFeatureController::class,
 	WebhookController::class,
 	DirectionsController::class,
-	UserController::class, 
-	RolesController::class
+	UserController::class,
+	RolesController::class,
+	PermissionsController::class
 ]);
 
 $router->dispatch($request);
