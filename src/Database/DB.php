@@ -71,7 +71,7 @@ class DB
         // Permissions
         $pdo->exec('CREATE TABLE IF NOT EXISTS permissions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
             user_id INTEGER,
             role_id INTEGER,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

@@ -27,7 +27,7 @@ class UserRepository
 
     public function findById(int $id): ?array
     {
-    $stmt = $this->pdo->prepare('SELECT id,name,email,telegram_id,created_at,updated_at FROM users WHERE id=?');
+        $stmt = $this->pdo->prepare('SELECT id,name,email,telegram_id,created_at,updated_at FROM users WHERE id=?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         if (!$row) return null;
@@ -37,7 +37,7 @@ class UserRepository
 
     public function findByEmail(string $email): ?array
     {
-    $stmt = $this->pdo->prepare('SELECT id,name,email,telegram_id,created_at,updated_at FROM users WHERE email=?');
+        $stmt = $this->pdo->prepare('SELECT id,name,email,telegram_id,created_at,updated_at FROM users WHERE email=?');
         $stmt->execute([$email]);
         $row = $stmt->fetch();
         if (!$row) return null;
@@ -54,6 +54,7 @@ class UserRepository
         $users = $stmt->fetchAll();
         foreach ($users as &$u) {
             $u['roles'] = $this->getRoles((int)$u['id']);
+            $u['permissions'] = $this->getPermissions((int)$u['id']);
         }
         return $users;
     }
@@ -99,9 +100,18 @@ class UserRepository
 
         $sets = [];
         $vals = [];
-        if (isset($fields['name'])) { $sets[] = 'name=?'; $vals[] = (string)$fields['name']; }
-        if (isset($fields['email'])) { $sets[] = 'email=?'; $vals[] = strtolower((string)$fields['email']); }
-        if (isset($fields['telegram_id'])) { $sets[] = 'telegram_id=?'; $vals[] = $fields['telegram_id'] !== null ? (string)$fields['telegram_id'] : null; }
+        if (isset($fields['name'])) {
+            $sets[] = 'name=?';
+            $vals[] = (string)$fields['name'];
+        }
+        if (isset($fields['email'])) {
+            $sets[] = 'email=?';
+            $vals[] = strtolower((string)$fields['email']);
+        }
+        if (isset($fields['telegram_id'])) {
+            $sets[] = 'telegram_id=?';
+            $vals[] = $fields['telegram_id'] !== null ? (string)$fields['telegram_id'] : null;
+        }
         if (isset($fields['password']) && $fields['password'] !== '') {
             $sets[] = 'password_hash=?';
             $vals[] = password_hash((string)$fields['password'], PASSWORD_DEFAULT);
@@ -134,5 +144,12 @@ class UserRepository
         $stmt = $this->pdo->prepare('SELECT r.name, r.description FROM roles r JOIN user_roles ur ON ur.role_id=r.id WHERE ur.user_id=?');
         $stmt->execute([$userId]);
         return array_map(fn($r) => [$r['name'], $r['description']], $stmt->fetchAll());
+    }
+
+    private function getPermissions(int $userId): array
+    {
+        $stmt = $this->pdo->prepare('SELECT p.name FROM permissions p LEFT JOIN user_roles ur ON p.role_id = ur.user_id WHERE p.user_id = ?');
+        $stmt->execute([$userId]);
+        return array_map(fn($r) => $r['name'], $stmt->fetchAll());
     }
 }
