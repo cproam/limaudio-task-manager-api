@@ -10,4 +10,8 @@ class UpdateRoleDTO
     #[Required]
     #[Unique('roles', 'name')]
     public string $name;
+
+    #[Required]
+    #[Unique('roles', 'description')]
+    public string $description;
 }

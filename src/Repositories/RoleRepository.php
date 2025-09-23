@@ -50,7 +50,7 @@ class RoleRepository
 
     public function update(int $id, string $name, string $description): ?array
     {
-        $stmt = $this->pdo->prepare('UPDATE roles SET name=? description=? WHERE id=?');
+        $stmt = $this->pdo->prepare('UPDATE roles SET name=?, description=? WHERE id=?');
         $stmt->execute([$name, $description, $id]);
         if ($stmt->rowCount() === 0) {
             // Could be same value or not found; check existence explicitly
