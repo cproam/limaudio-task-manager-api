@@ -16,7 +16,7 @@ class RoleRepository
 
     public function listAll(): array
     {
-        $stmt = $this->pdo->query('SELECT id, name FROM roles ORDER BY name ASC');
+        $stmt = $this->pdo->query('SELECT id, name, description FROM roles ORDER BY name ASC');
         return $stmt->fetchAll();
     }
 
