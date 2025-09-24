@@ -6,10 +6,10 @@ enum TaskStatus: string
 {
     case New = 'Новая';
     case Assigned = 'Ответственный назначен';
-    case InProgress = 'Задача в работе';
-    case Completed = 'Задача выполнена';
-    case Overdue = 'Задача просрочена';
-    case Extended = 'Задача продлена';
+    case InProgress = 'В работе';
+    case Completed = 'Выполнена';
+    case Overdue = 'Просрочена';
+    case Extended = 'Продлена';
 
     /**
      * Get all allowed values as array
