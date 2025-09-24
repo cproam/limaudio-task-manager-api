@@ -32,6 +32,7 @@ class UserRepository
         $row = $stmt->fetch();
         if (!$row) return null;
         $row['roles'] = $this->getRoles($id);
+        $row['permissions'] = $this->getPermissions($id);
         return $row;
     }
 
@@ -42,6 +43,7 @@ class UserRepository
         $row = $stmt->fetch();
         if (!$row) return null;
         $row['roles'] = $this->getRoles((int)$row['id']);
+        $row['permissions'] = $this->getPermissions($id);
         return $row;
     }
 
