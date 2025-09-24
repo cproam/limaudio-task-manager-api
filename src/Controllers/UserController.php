@@ -54,7 +54,7 @@ class UserController
         return Response::json(['items' => $users, 'limit' => $limit, 'offset' => $offset]);
     }
 
-    #[Route('GET', '/users/{id}')] 
+    #[Route('GET', '/users/{id}')]
     public function get(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
@@ -82,12 +82,18 @@ class UserController
         if (array_key_exists('email', $payload)) $fields['email'] = strtolower((string)$payload['email']);
         if (array_key_exists('telegram_id', $payload)) $fields['telegram_id'] = $payload['telegram_id'] === null ? null : (string)$payload['telegram_id'];
         if (array_key_exists('password', $payload)) $fields['password'] = (string)$payload['password'];
+
         $roles = null;
         if (array_key_exists('roles', $payload)) {
             $roles = is_array($payload['roles']) ? array_values(array_intersect($payload['roles'], ['admin', 'sales_manager'])) : [];
         }
 
-        $updated = $this->users->update($id, $fields, $roles);
+        $permissions = null;
+        if (array_key_exists('permissions', $payload)) {
+            $permissions =  is_array($payload['permissions']) ? array_values($payload['permissions']) : [];
+        }
+
+        $updated = $this->users->update($id, $fields, $roles, $permissions);
         if (!$updated) return Response::json(['error' => 'Not Found'], 404);
         return Response::json($updated);
     }
