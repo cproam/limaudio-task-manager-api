@@ -163,7 +163,7 @@ class UserRepository
     {
         if (!$permissions) return;
         $this->pdo->prepare('DELETE FROM permissions WHERE user_id=?')->execute([$userId]);
-        $stmt = $this->pdo->prepare('INSERT OR IGNORE INTO permissions(name, user_id) VALUES(?, ?, ?)');
+        $stmt = $this->pdo->prepare('INSERT OR IGNORE INTO permissions(name, user_id) VALUES(?, ?)');
         foreach ($permissions as $pname) {
             $stmt->execute([$pname, $userId]);
         }
