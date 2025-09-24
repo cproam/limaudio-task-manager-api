@@ -85,7 +85,7 @@ class UserController
 
         $roles = null;
         if (array_key_exists('roles', $payload)) {
-            $roles = is_array($payload['roles']) ? array_values(array_intersect($payload['roles'], ['admin', 'sales_manager'])) : [];
+            $roles = $payload['roles'];
         }
 
         $permissions = null;
