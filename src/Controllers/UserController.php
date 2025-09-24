@@ -90,7 +90,7 @@ class UserController
 
         $permissions = null;
         if (array_key_exists('permissions', $payload)) {
-            $permissions =  is_array($payload['permissions']) ? array_values($payload['permissions']) : [];
+            $permissions = $payload['permissions'];
         }
 
         $updated = $this->users->update($id, $fields, $roles, $permissions);

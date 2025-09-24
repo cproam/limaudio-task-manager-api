@@ -145,14 +145,6 @@ class UserRepository
         return array_map(fn($r) => (int)$r['id'], $stmt->fetchAll());
     }
 
-    private function resolvePermissionIds(array $permissions): array
-    {
-        $in = implode(',', array_fill(0, count($permissions), '?'));
-        $stmt = $this->pdo->prepare("SELECT id FROM permissions WHERE name IN ($in)");
-        $stmt->execute(array_values($permissions));
-        return array_map(fn($p) => (int)$p['id'], $stmt->fetchAll());
-    }
-
     private function getRoles(int $userId): array
     {
         $stmt = $this->pdo->prepare('SELECT r.name, r.description FROM roles r JOIN user_roles ur ON ur.role_id=r.id WHERE ur.user_id=?');
