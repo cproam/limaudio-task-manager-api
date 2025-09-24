@@ -43,7 +43,7 @@ class UserRepository
         $row = $stmt->fetch();
         if (!$row) return null;
         $row['roles'] = $this->getRoles((int)$row['id']);
-        $row['permissions'] = $this->getPermissions($id);
+        $row['permissions'] = $this->getPermissions((int)$row['id']);
         return $row;
     }
 
@@ -171,10 +171,9 @@ class UserRepository
     {
         if (!$permissions) return;
         $this->pdo->prepare('DELETE FROM permissions WHERE user_id=?')->execute([$userId]);
-        $permissionIds = $this->resolvePermissionIds($permissions);
-        $stmt = $this->pdo->prepare('INSERT OR IGNORE INTO permissions(user_id, role_id) VALUES(?, ?)');
-        foreach ($permissionIds as $pid) {
-            $stmt->execute([$userId, $pid]);
+        $stmt = $this->pdo->prepare('INSERT OR IGNORE INTO permissions(name, user_id) VALUES(?, ?, ?)');
+        foreach ($permissions as $pname) {
+            $stmt->execute([$pname, $userId]);
         }
     }
 }
