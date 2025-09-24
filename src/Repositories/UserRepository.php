@@ -93,7 +93,7 @@ class UserRepository
         return (bool)$stmt->fetchColumn();
     }
 
-    public function update(int $id, array $fields, ?array $roles = null): ?array
+    public function update(int $id, array $fields, ?array $roles = null, ?array $permissions = null): ?array
     {
         $user = $this->findById($id);
         if (!$user) return null;
@@ -128,6 +128,10 @@ class UserRepository
             $this->replaceRoles($id, $roles);
         }
 
+        if (is_array($permissions)) {
+            $this->updatePermissions($id, $permissions);
+        }
+
         return $this->findById($id);
     }
 
@@ -137,6 +141,14 @@ class UserRepository
         $stmt = $this->pdo->prepare("SELECT id FROM roles WHERE name IN ($in)");
         $stmt->execute(array_values($roles));
         return array_map(fn($r) => (int)$r['id'], $stmt->fetchAll());
+    }
+
+    private function resolvePermissionIds(array $permissions): array
+    {
+        $in = implode(',', array_fill(0, count($permissions), '?'));
+        $stmt = $this->pdo->prepare("SELECT id FROM permissions WHERE name IN ($in)");
+        $stmt->execute(array_values($permissions));
+        return array_map(fn($p) => (int)$p['id'], $stmt->fetchAll());
     }
 
     private function getRoles(int $userId): array
@@ -151,5 +163,16 @@ class UserRepository
         $stmt = $this->pdo->prepare('SELECT p.name FROM permissions p LEFT JOIN user_roles ur ON ur.role_id = p.role_id WHERE p.user_id = ? OR ur.user_id = ?');
         $stmt->execute([$userId, $userId]);
         return array_map(fn($r) => $r['name'], $stmt->fetchAll());
+    }
+
+    private function updatePermissions(int $userId, array $permissions)
+    {
+        if (!$permissions) return;
+        $this->pdo->prepare('DELETE FROM permissions WHERE user_id=?')->execute([$userId]);
+        $permissionIds = $this->resolvePermissionIds($permissions);
+        $stmt = $this->pdo->prepare('INSERT OR IGNORE INTO permissions(user_id, role_id) VALUES(?, ?)');
+        foreach ($permissionIds as $pid) {
+            $stmt->execute([$userId, $pid]);
+        }
     }
 }
