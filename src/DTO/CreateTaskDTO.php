@@ -14,6 +14,8 @@ class CreateTaskDTO
 
     public ?int $direction_id = null;
 
+    public ?int $urgency = null;
+
     #[Date]
     public ?string $due_at = null;
 

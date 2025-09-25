@@ -53,6 +53,18 @@ class TaskNotificationService
     }
 
     /**
+     * Уведомление об изменении срочности
+     */
+    public static function notifyUrgencyChanged(int $taskId, string $urgency, string $title, string $description = ''): void
+    {
+        $titleEsc = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $descEsc = $description !== '' ? htmlspecialchars($description, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
+        $descLine = $descEsc !== '' ? "\nОписание: {$descEsc}" : '';
+        $msg = "🔄 Обновление срочности задачи #{$taskId}: <b>{$urgency}</b>\n<b>{$titleEsc}</b>{$descLine}";
+        Telegram::send($msg);
+    }
+
+    /**
      * Уведомление о дедлайне
      */
     public static function notifyDeadline(int $taskId, string $title, string $timeLeft, ?string $assigneeTg = null): void

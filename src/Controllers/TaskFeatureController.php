@@ -53,6 +53,7 @@ class TaskFeatureController
             'title' => $dto->title,
             'description' => $dto->description,
             'direction_id' => $dto->direction_id,
+            'urgency' => $dto->urgency,
             'due_at' => $dto->due_at,
             'assigned_user_id' => $dto->assigned_user_id,
             'links' => $dto->links ?? [],
@@ -208,6 +209,17 @@ class TaskFeatureController
         $assigneeId = isset($updated['assigned_user_id']) ? (int)$updated['assigned_user_id'] : null;
         [$assigneeName, $assigneeTg] = $this->getAssigneeInfo($assigneeId);
         TaskNotificationService::notifyStatusChanged($id, $status, $updated['title'], $updated['description'] ?? '', $assigneeName, $assigneeTg);
+        return Response::json($updated);
+    }
+
+    #[Route('PATCH', '/task/{id}/urgency')]
+    public function updateUrgency(Request $req, array $params)
+    {
+        $id = (int)($params['id'] ?? 0);
+        $urgency = (int)($req->body['urgency'] ?? 5);
+        $updated = $this->tasks->updateUrgency($id, $urgency);
+        if (!$updated) return Response::json(['error' => 'Not Found'], 404);
+        TaskNotificationService::notifyUrgencyChanged($id, $urgency, $updated['title'], $updated['description'] ?? '');
         return Response::json($updated);
     }
 

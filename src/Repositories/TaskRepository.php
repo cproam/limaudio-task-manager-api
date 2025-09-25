@@ -22,7 +22,7 @@ class TaskRepository
         if (!empty($data['assigned_user_id'])) {
             $status = 'Ответственный назначен';
         }
-        $stmt = $this->pdo->prepare('INSERT INTO tasks(title,description,direction_id,due_at,assigned_user_id,status,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)');
+        $stmt = $this->pdo->prepare('INSERT INTO tasks(title,description,direction_id,due_at,assigned_user_id,status,urgency,created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)');
         $stmt->execute([
             $data['title'],
             $data['description'] ?? null,
@@ -30,6 +30,7 @@ class TaskRepository
             $data['due_at'] ?? null,
             $data['assigned_user_id'] ?? null,
             $status,
+            $data['urgency'],
             $data['created_by'] ?? null,
             $now,
             $now,
@@ -146,6 +147,14 @@ class TaskRepository
     {
         $stmt = $this->pdo->prepare('UPDATE tasks SET status=?, updated_at=? WHERE id=?');
         $stmt->execute([$status, gmdate('c'), $taskId]);
+        if ($stmt->rowCount() === 0) return null;
+        return $this->get($taskId);
+    }
+
+    public function updateUrgency(int $taskId, int $urgency): ?array
+    {
+        $stmt = $this->pdo->prepare('UPDATE tasks SET urgency=?, updated_at=? WHERE id=?');
+        $stmt->execute([$urgency, gmdate('c'), $taskId]);
         if ($stmt->rowCount() === 0) return null;
         return $this->get($taskId);
     }

@@ -101,6 +101,7 @@ class DB
             notified_30 INTEGER NOT NULL DEFAULT 0,
             notified_10 INTEGER NOT NULL DEFAULT 0,
             notified_0 INTEGER NOT NULL DEFAULT 0,
+            urgency INTEGER DEFAULT 5,
             FOREIGN KEY(direction_id) REFERENCES directions(id) ON DELETE SET NULL,
             FOREIGN KEY(assigned_user_id) REFERENCES users(id) ON DELETE SET NULL,
             FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL
