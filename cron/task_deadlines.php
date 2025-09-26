@@ -72,7 +72,7 @@ foreach ($tasks as $t) {
     // 0% или просрочено
     if ($left <= 0 && !$t['notified_0']) {
         TaskNotificationService::notifyDeadline($id, $title, $timeLeft, $t['assignee_tg']);
-        $pdo->prepare('UPDATE tasks SET notified_0=1, status=?, updated_at=? WHERE id=?')->execute(['Задача просрочена', gmdate('c'), $id]);
+        $pdo->prepare('UPDATE tasks SET notified_0=1, status=?, updated_at=? WHERE id=?')->execute(['Просрочено', gmdate('c'), $id]);
     }
 }
 
