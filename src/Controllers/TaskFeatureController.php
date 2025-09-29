@@ -65,10 +65,8 @@ class TaskFeatureController
 
         // Notify Telegram: duplicate to admin chat AND personally to assignee (if set)
         $assigneeId = $payload['assigned_user_id'] ?? null;
-        $deadline = $payload['due_at'] ?? null;
         [$assigneeName, $assigneeTg] = $this->getAssigneeInfo($assigneeId);
-        TaskNotificationService::notifyTaskCreated($task, $assigneeName, $assigneeTg, $deadline);
-
+        TaskNotificationService::notifyTaskCreated($task, $assigneeName, $assigneeTg, $payload['due_at']);
         return Response::json($task, 201);
     }
 
@@ -180,7 +178,7 @@ class TaskFeatureController
     {
         $id = (int)($params['id'] ?? 0);
         $status = (string)($req->body['status'] ?? '');
-        
+
         // Валидация статуса через enum
         if (!\App\Enums\TaskStatus::isValid($status)) {
             return Response::json(['error' => 'Invalid status'], 422);
