@@ -17,7 +17,7 @@ class TaskNotificationService
         $desc = $descRaw !== '' ? htmlspecialchars($descRaw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '';
         $assigneeLine = $assigneeName !== '' ? "\nОтветственный: {$assigneeName}" : '';
         $descLine = $desc !== '' ? "\nОписание: {$desc}" : '';
-        $deadlineLine = $deadline !== null ? date('d.m.Y H:i:s', $deadline) : '';
+        $deadlineLine = $deadline !== null ? date('d.m.Y H:i:s', (int)$deadline) : '';
         $msg = "🆕 Новая задача: <b>{$title}</b>{$descLine}{$assigneeLine}\nСтатус: {$task['status']}\nID: {$task['id']}\nСделать до: {$deadlineLine}";
         Telegram::send($msg);
         if ($assigneeTg) {
