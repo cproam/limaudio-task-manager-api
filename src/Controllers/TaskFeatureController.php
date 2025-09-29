@@ -65,8 +65,9 @@ class TaskFeatureController
 
         // Notify Telegram: duplicate to admin chat AND personally to assignee (if set)
         $assigneeId = $payload['assigned_user_id'] ?? null;
+        $deadline = $payload['due_at'] ?? null;
         [$assigneeName, $assigneeTg] = $this->getAssigneeInfo($assigneeId);
-        TaskNotificationService::notifyTaskCreated($task, $assigneeName, $assigneeTg);
+        TaskNotificationService::notifyTaskCreated($task, $assigneeName, $assigneeTg, $deadline);
 
         return Response::json($task, 201);
     }
