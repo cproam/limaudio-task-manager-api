@@ -60,7 +60,7 @@ foreach ($tasks as $t) {
     }
 
     // Pending
-    if (!$t['notified_pending'] && strtotime('+5 minutes', $current) >= time()) {
+    if (!$t['notified_pending'] && (strtotime('+5 minutes', $current) <= time())) {
         $timeLeft = 'Примите задачу';
         TaskNotificationService::notifyDeadline($id, $title, $timeLeft, $t['assignee_tg']);
         $pdo->prepare('UPDATE tasks SET notified_pending=1 WHERE id=?')->execute([$id]);
