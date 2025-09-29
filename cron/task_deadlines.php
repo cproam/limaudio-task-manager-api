@@ -28,7 +28,7 @@ DB::migrate();
 $pdo = DB::conn();
 
 // Получить задачи с датами выполнения
-$stmt = $pdo->query("SELECT t.id, t.title, t.created_at, t.due_at, t.notified_30, t.notified_10, t.notified_0, u.telegram_id AS assignee_tg FROM tasks t LEFT JOIN users u ON u.id=t.assigned_user_id WHERE t.due_at IS NOT NULL");
+$stmt = $pdo->query("SELECT t.id, t.title, t.created_at, t.due_at, t.notified_pending, t.notified_30, t.notified_10, t.notified_0, u.telegram_id AS assignee_tg FROM tasks t LEFT JOIN users u ON u.id=t.assigned_user_id WHERE t.due_at IS NOT NULL");
 $tasks = $stmt->fetchAll();
 $now = time();
 
@@ -57,6 +57,13 @@ foreach ($tasks as $t) {
     
     if ($left < 0) {
         $timeLeft = 'просрочено';
+    }
+
+    // Pending
+    if (!$t['notified_pending'] && strtotime('+5 minutes', $current) >= time()) {
+        $timeLeft = 'Примите задачу';
+        TaskNotificationService::notifyDeadline($id, $title, $timeLeft, $t['assignee_tg']);
+        $pdo->prepare('UPDATE tasks SET notified_pending=1 WHERE id=?')->execute([$id]);
     }
 
     // 30%

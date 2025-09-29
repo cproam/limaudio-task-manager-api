@@ -98,6 +98,7 @@ class DB
             created_by INTEGER,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
+            notified_pending INTEGER NOT NULL DEFAULT 0,
             notified_30 INTEGER NOT NULL DEFAULT 0,
             notified_10 INTEGER NOT NULL DEFAULT 0,
             notified_0 INTEGER NOT NULL DEFAULT 0,

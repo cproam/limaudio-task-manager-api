@@ -74,6 +74,9 @@ class TaskNotificationService
         } else {
             $msg = "⚠️ Задача #{$taskId} ({$title}) — дедлайн через {$timeLeft}";
         }
+        if (str_contains($timeLeft, 'Примите задачу')) {
+            $msg = "⚠️ {$timeLeft}";
+        }
         Telegram::send($msg);
         if ($assigneeTg) {
             Telegram::sendTo($assigneeTg, $msg);
