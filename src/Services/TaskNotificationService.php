@@ -10,7 +10,7 @@ class TaskNotificationService
     /**
      * Уведомление о создании задачи
      */
-    public static function notifyTaskCreated(array $task, string $assigneeName = '', ?string $assigneeTg = null, ?int $deadline = null): void
+    public static function notifyTaskCreated(array $task, string $assigneeName = '', ?string $assigneeTg = null, $deadline = null): void
     {
         $title = htmlspecialchars($task['title'] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $descRaw = (string)($task['description'] ?? '');
