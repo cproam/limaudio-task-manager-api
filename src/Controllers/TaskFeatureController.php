@@ -166,7 +166,7 @@ class TaskFeatureController
                         return Response::json(['error' => 'cannot save file'], 500);
                     }
                 }
-                $url = '/uploads/' . $name;
+                $url = '/uploads/' . $nameHashed;
                 $rec[] = $this->tasks->attachFile($taskId, $name, $url);
             }
 
