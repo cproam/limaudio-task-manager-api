@@ -148,21 +148,25 @@ class TaskFeatureController
             if (!is_dir($uploadDir)) @mkdir($uploadDir, 0777, true);
 
             // Support for multiple files
-            foreach ($_FILES['files'] as $file) {
-                if ($file['error'] !== UPLOAD_ERR_OK) {
-                    return Response::json(['error' => 'upload failed', 'code' => $file['error']], 400);
+            foreach ($_FILES['files']['name'] as $key => $name) {
+                $tmpName = $_FILES['files']['tmp_name'][$key];
+                $error   = $_FILES['files']['error'][$key];
+                $size    = $_FILES['files']['size'][$key];
+
+                if ($error !== UPLOAD_ERR_OK) {
+                    return Response::json(['error' => 'upload failed', 'code' => $error], 400);
                 }
-                $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                $ext = pathinfo($name, PATHINFO_EXTENSION);
                 $hash = bin2hex(random_bytes(16));
-                $name = $hash . ($ext ? ('.' . $ext) : '');
-                $dest = $uploadDir . '/' . $name;
-                if (!move_uploaded_file($file['tmp_name'], $dest)) {
-                    if (!rename($file['tmp_name'], $dest)) {
+                $nameHashed = $hash . ($ext ? ('.' . $ext) : '');
+                $dest = $uploadDir . '/' . $nameHashed;
+                if (!move_uploaded_file($tmpName, $dest)) {
+                    if (!rename($tmpName, $dest)) {
                         return Response::json(['error' => 'cannot save file'], 500);
                     }
                 }
                 $url = '/uploads/' . $name;
-                $rec = $this->tasks->attachFile($taskId, $file['name'], $url);
+                $rec = $this->tasks->attachFile($taskId, $name, $url);
             }
 
             return Response::json($rec, 201);
