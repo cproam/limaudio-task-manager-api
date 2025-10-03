@@ -19,6 +19,7 @@ else {
 }
 
 use App\Database\DB;
+use App\Enums\TaskStatus;
 use App\Support\Env;
 use App\Services\TaskNotificationService;
 
@@ -46,7 +47,7 @@ foreach ($tasks as $t) {
     $days = floor(abs($leftSeconds) / (24 * 3600));
     $hours = floor((abs($leftSeconds) % (24 * 3600)) / 3600);
     $minutes = floor((abs($leftSeconds) % 3600) / 60);
-    
+
     if ($days > 0) {
         $timeLeft = $days . ' дн., ' . $hours . ' ч.';
     } elseif ($hours > 0) {
@@ -54,7 +55,7 @@ foreach ($tasks as $t) {
     } else {
         $timeLeft = $minutes . ' мин.';
     }
-    
+
     if ($left < 0) {
         $timeLeft = 'просрочено';
     }
@@ -79,7 +80,7 @@ foreach ($tasks as $t) {
     // 0% или просрочено
     if ($left <= 0 && !$t['notified_0']) {
         TaskNotificationService::notifyDeadline($id, $title, $timeLeft, $t['assignee_tg']);
-        $pdo->prepare('UPDATE tasks SET notified_0=1, status=?, updated_at=? WHERE id=?')->execute(['Просрочено', gmdate('c'), $id]);
+        $pdo->prepare('UPDATE tasks SET notified_0=1, status=?, updated_at=? WHERE id=?')->execute([TaskStatus::Overdue, gmdate('c'), $id]);
     }
 }
 

@@ -159,12 +159,45 @@ class TaskRepository
         return $this->get($taskId);
     }
 
-    public function patchDeadline(int $taskId, string $deadline): ?array
+    public function patch(int $taskId, array $fields): ?array
     {
-        $stmt = $this->pdo->prepare('UPDATE tasks SET due_at=?, updated_at=?, notified_30=?, notified_10=?, notified_0=? WHERE id=?');
-        $notified = 0;
-        $stmt->execute([$deadline, gmdate('c'), $notified, $notified, $notified, $taskId]);
-        if ($stmt->rowCount() === 0) return null;
+        $task = $this->get($taskId);
+        if (!$task) return null;
+
+        $sets = [];
+        $vals = [];
+        if (isset($fields['deadline'])) {
+            $sets[] = 'due_at=?';
+            $vals[] = (string)$fields['deadline'];
+        }
+        if (isset($fields['description'])) {
+            $sets[] = 'description=?';
+            $vals[] = (string)$fields['description'];
+        }
+        if (isset($fields['notified_30'])) {
+            $sets[] = 'notified_30=?';
+            $vals[] = $fields['notified_30'];
+        }
+        if (isset($fields['notified_10'])) {
+            $sets[] = 'notified_10=?';
+            $vals[] = $fields['notified_10'];
+        }
+        if (isset($fields['notified_0'])) {
+            $sets[] = 'notified_0=?';
+            $vals[] = $fields['notified_0'];
+        }
+        if (isset($fields['notified_pending'])) {
+            $sets[] = 'notified_pending=?';
+            $vals[] = $fields['notified_pending'];
+        }
+        if ($sets) {
+            $sets[] = 'updated_at=?';
+            $vals[] = gmdate('c');
+            $vals[] = $taskId;
+            $sql = 'UPDATE tasks SET ' . implode(',', $sets) . ' WHERE id=?';
+            $this->pdo->prepare($sql)->execute($vals);
+        }
+
         return $this->get($taskId);
     }
 

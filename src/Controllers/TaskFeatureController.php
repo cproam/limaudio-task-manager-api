@@ -141,36 +141,32 @@ class TaskFeatureController
     {
         $taskId = (int)($params['id'] ?? 0);
         // Two modes: JSON reference or multipart upload
-        if (!empty($_FILES['file'])) {
-            // Delegate to UploadController logic inline to avoid routing re-entry
-            $file = $_FILES['file'];
-            if ($file['error'] !== UPLOAD_ERR_OK) {
-                return Response::json(['error' => 'upload failed', 'code' => $file['error']], 400);
-            }
+        if (!empty($_FILES['files'])) {
+
             $root = dirname(__DIR__, 2);
             $uploadDir = $root . '/public/uploads';
             if (!is_dir($uploadDir)) @mkdir($uploadDir, 0777, true);
-            $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-            $hash = bin2hex(random_bytes(16));
-            $name = $hash . ($ext ? ('.' . $ext) : '');
-            $dest = $uploadDir . '/' . $name;
-            if (!move_uploaded_file($file['tmp_name'], $dest)) {
-                if (!rename($file['tmp_name'], $dest)) {
-                    return Response::json(['error' => 'cannot save file'], 500);
+
+            // Support for multiple files
+            foreach ($_FILES['files'] as $file) {
+                if ($file['error'] !== UPLOAD_ERR_OK) {
+                    return Response::json(['error' => 'upload failed', 'code' => $file['error']], 400);
                 }
+                $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                $hash = bin2hex(random_bytes(16));
+                $name = $hash . ($ext ? ('.' . $ext) : '');
+                $dest = $uploadDir . '/' . $name;
+                if (!move_uploaded_file($file['tmp_name'], $dest)) {
+                    if (!rename($file['tmp_name'], $dest)) {
+                        return Response::json(['error' => 'cannot save file'], 500);
+                    }
+                }
+                $url = '/uploads/' . $name;
+                $rec = $this->tasks->attachFile($taskId, $file['name'], $url);
             }
-            $url = '/uploads/' . $name;
-            $rec = $this->tasks->attachFile($taskId, $file['name'], $url);
+
             return Response::json($rec, 201);
         }
-        // JSON body: { file_name, file_url }
-        $fileName = (string)($req->body['file_name'] ?? '');
-        $fileUrl = (string)($req->body['file_url'] ?? '');
-        if ($fileName === '' || $fileUrl === '') {
-            return Response::json(['error' => 'file_name and file_url are required'], 422);
-        }
-        $rec = $this->tasks->attachFile($taskId, $fileName, $fileUrl);
-        return Response::json($rec, 201);
     }
 
     #[Route('PATCH', '/task/{id}/status')]
@@ -222,16 +218,22 @@ class TaskFeatureController
         return Response::json($updated);
     }
 
-    #[Route('PATCH', '/task/{id}')] // <-- Suggested change incorporated
+    #[Route('PATCH', '/task/{id}')]
     public function patchTask(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
-        $deadline = (string)($req->body['deadline']);
-        $updated = $this->tasks->patchDeadline($id, $deadline);
+        $updated = $this->tasks->patch($id, [
+            'description' => $req->body['description'] ?? null,
+            'deadline' => $req->body['deadline'] ?? null,
+            'notified_30' => $req->body['notified_30'] ?? null,
+            'notified_10' => $req->body['notified_10'] ?? null,
+            'notified_0' => $req->body['notified_0'] ?? null,
+            'notified_pending' => $req->body['notified_pending'] ?? null,
+        ]);
         return Response::json($updated);
     }
 
-    #[Route('DELETE', '/task/{id}')] // <-- Route attribute added to delete method
+    #[Route('DELETE', '/task/{id}')]
     public function delete(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
