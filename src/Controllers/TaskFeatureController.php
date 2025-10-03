@@ -147,6 +147,10 @@ class TaskFeatureController
             $uploadDir = $root . '/public/uploads';
             if (!is_dir($uploadDir)) @mkdir($uploadDir, 0777, true);
 
+            return Response::json($_FILES);
+
+            $rec = [];
+
             // Support for multiple files
             foreach ($_FILES['files']['name'] as $key => $name) {
                 $tmpName = $_FILES['files']['tmp_name'][$key];
@@ -166,7 +170,7 @@ class TaskFeatureController
                     }
                 }
                 $url = '/uploads/' . $name;
-                $rec = $this->tasks->attachFile($taskId, $name, $url);
+                $rec[] = $this->tasks->attachFile($taskId, $name, $url);
             }
 
             return Response::json($rec, 201);
