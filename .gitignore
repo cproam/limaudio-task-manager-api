@@ -7,3 +7,4 @@ Thumbs.db
 /storage
 composer.lock
 .vscode
+public/uploads/*

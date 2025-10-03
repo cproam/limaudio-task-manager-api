@@ -140,14 +140,11 @@ class TaskFeatureController
     public function attachFile(Request $req, array $params)
     {
         $taskId = (int)($params['id'] ?? 0);
-        // Two modes: JSON reference or multipart upload
-        if (!empty($_FILES['files'])) {
+        if (!empty($_FILES)) {
 
             $root = dirname(__DIR__, 2);
             $uploadDir = $root . '/public/uploads';
             if (!is_dir($uploadDir)) @mkdir($uploadDir, 0777, true);
-
-            return Response::json($_FILES);
 
             $rec = [];
 
