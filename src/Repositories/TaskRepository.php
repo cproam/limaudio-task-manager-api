@@ -210,9 +210,9 @@ class TaskRepository
 
     private function getLinks(int $taskId): array
     {
-        $stmt = $this->pdo->prepare('SELECT url FROM task_links WHERE task_id=?');
+        $stmt = $this->pdo->prepare('SELECT id, url FROM task_links WHERE task_id=? ORDER BY id ASC');
         $stmt->execute([$taskId]);
-        return array_map(fn($r) => $r['url'], $stmt->fetchAll());
+        return $stmt->fetchAll();
     }
 
     private function getFiles(int $taskId): array
@@ -227,5 +227,67 @@ class TaskRepository
         $stmt = $this->pdo->prepare('SELECT id, task_id, user_id, text, created_at FROM comments WHERE task_id=? ORDER BY id ASC');
         $stmt->execute([$taskId]);
         return $stmt->fetchAll();
+    }
+
+    public function updateComment(int $taskId, int $commentId, string $text): ?array
+    {
+        $comment = $this->findComment($taskId, $commentId);
+        if (!$comment) {
+            return null;
+        }
+
+        if ($comment['text'] !== $text) {
+            $stmt = $this->pdo->prepare('UPDATE comments SET text=? WHERE id=? AND task_id=?');
+            $stmt->execute([$text, $commentId, $taskId]);
+            $comment = $this->findComment($taskId, $commentId);
+        }
+
+        return $comment;
+    }
+
+    public function deleteComment(int $taskId, int $commentId): bool
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM comments WHERE id=? AND task_id=?');
+        $stmt->execute([$commentId, $taskId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function updateLink(int $taskId, int $linkId, string $url): ?array
+    {
+        $link = $this->findLink($taskId, $linkId);
+        if (!$link) {
+            return null;
+        }
+
+        if ($link['url'] !== $url) {
+            $stmt = $this->pdo->prepare('UPDATE task_links SET url=? WHERE id=? AND task_id=?');
+            $stmt->execute([$url, $linkId, $taskId]);
+            $link = $this->findLink($taskId, $linkId);
+        }
+
+        return $link;
+    }
+
+    public function deleteLinkById(int $taskId, int $linkId): bool
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM task_links WHERE id=? AND task_id=?');
+        $stmt->execute([$linkId, $taskId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    private function findComment(int $taskId, int $commentId): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT id, task_id, user_id, text, created_at FROM comments WHERE id=? AND task_id=?');
+        $stmt->execute([$commentId, $taskId]);
+        $comment = $stmt->fetch();
+        return $comment ?: null;
+    }
+
+    private function findLink(int $taskId, int $linkId): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT id, task_id, url FROM task_links WHERE id=? AND task_id=?');
+        $stmt->execute([$linkId, $taskId]);
+        $link = $stmt->fetch();
+        return $link ?: null;
     }
 }

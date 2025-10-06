@@ -136,6 +136,68 @@ class TaskFeatureController
         return Response::json($comment, 201);
     }
 
+    #[Route('PATCH', '/task/{id}/comments/{commentId}')]
+    public function patchComment(Request $req, array $params)
+    {
+        $taskId = (int)($params['id'] ?? 0);
+        $commentId = (int)($params['commentId'] ?? 0);
+        $text = trim((string)($req->body['text'] ?? ''));
+        if ($text === '') {
+            return Response::json(['error' => 'text is required'], 422);
+        }
+
+        $comment = $this->tasks->updateComment($taskId, $commentId, $text);
+        if (!$comment) {
+            return Response::json(['error' => 'Not Found'], 404);
+        }
+
+        return Response::json($comment);
+    }
+
+    #[Route('DELETE', '/task/{id}/comments/{commentId}')]
+    public function deleteComment(Request $req, array $params)
+    {
+        $taskId = (int)($params['id'] ?? 0);
+        $commentId = (int)($params['commentId'] ?? 0);
+
+        if (!$this->tasks->deleteComment($taskId, $commentId)) {
+            return Response::json(['error' => 'Not Found'], 404);
+        }
+
+        return Response::json(['status' => 'deleted']);
+    }
+
+    #[Route('PATCH', '/task/{id}/links/{linkId}')]
+    public function patchLink(Request $req, array $params)
+    {
+        $taskId = (int)($params['id'] ?? 0);
+        $linkId = (int)($params['linkId'] ?? 0);
+        $url = trim((string)($req->body['url'] ?? ''));
+        if ($url === '') {
+            return Response::json(['error' => 'url is required'], 422);
+        }
+
+        $link = $this->tasks->updateLink($taskId, $linkId, $url);
+        if (!$link) {
+            return Response::json(['error' => 'Not Found'], 404);
+        }
+
+        return Response::json($link);
+    }
+
+    #[Route('DELETE', '/task/{id}/links/{linkId}')]
+    public function deleteLink(Request $req, array $params)
+    {
+        $taskId = (int)($params['id'] ?? 0);
+        $linkId = (int)($params['linkId'] ?? 0);
+
+        if (!$this->tasks->deleteLinkById($taskId, $linkId)) {
+            return Response::json(['error' => 'Not Found'], 404);
+        }
+
+        return Response::json(['status' => 'deleted']);
+    }
+
     #[Route('POST', '/task/{id}/files')]
     public function attachFile(Request $req, array $params)
     {
