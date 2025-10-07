@@ -65,7 +65,7 @@ $router->beforeEach(function (Request $r) {
 	if ($method === 'OPTIONS') {
 		return; // allow CORS preflight
 	}
-	if ($path !== '/auth/login' && $path !== '/webhook/telegram') {
+	if ($path !== '/auth/login' && $path !== '/auth/refresh' && $path !== '/webhook/telegram') {
 		if (!Auth::requireBearer($r)) {
 			exit; // response already sent
 		}
