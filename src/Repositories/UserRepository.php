@@ -149,7 +149,7 @@ class UserRepository
     {
         $stmt = $this->pdo->prepare('SELECT r.name FROM roles r JOIN user_roles ur ON ur.role_id=r.id WHERE ur.user_id=?');
         $stmt->execute([$userId]);
-        return array_map(fn($r) => [$r['name']]], $stmt->fetchAll());
+        return array_map(fn($r) => [$r['name']], $stmt->fetchAll());
     }
 
     private function getPermissions(int $userId): array
