@@ -13,8 +13,8 @@ use PDO;
 
 class AuthController
 {
-    private const ACCESS_TOKEN_TTL = 60; // 1 minute
-    private const REFRESH_TOKEN_TTL = 60 * 60; // 1 hour
+    private const ACCESS_TOKEN_TTL = 60 * 60 * 3; // 1 minute
+    private const REFRESH_TOKEN_TTL = 60 * 60 * 12; // 1 hour
 
     private AuthValidator $validator;
 
