@@ -65,7 +65,7 @@ class UserController
 
     #[Route('PATCH', '/users/{id}')]
     #[Route('PUT', '/users/{id}')]
-    #[RequireRole('admin')]
+    #[RequireRole('Администратор')]
     public function update(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
@@ -96,5 +96,22 @@ class UserController
         $updated = $this->users->update($id, $fields, $roles, $permissions);
         if (!$updated) return Response::json(['error' => 'Not Found'], 404);
         return Response::json($updated);
+    }
+
+    #[Route('DELETE', '/users/{id}')]
+    #[RequireRole('Администратор')]
+    public function delete(Request $req, array $params)
+    {
+        $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            return Response::json(['error' => 'Not Found'], 404);
+        }
+
+        $deleted = $this->users->delete($id);
+        if (!$deleted) {
+            return Response::json(['error' => 'Not Found'], 404);
+        }
+
+        return Response::json(['deleted' => $id]);
     }
 }

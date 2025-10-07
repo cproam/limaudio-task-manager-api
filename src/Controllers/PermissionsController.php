@@ -29,7 +29,7 @@ class PermissionsController
     }
 
     #[Route('POST', '/permissions')]
-    #[RequireRole('admin')]
+    #[RequireRole('Администратор')]
     public function create(Request $req)
     {
         $data = $req->body;
@@ -48,7 +48,7 @@ class PermissionsController
 
     #[Route('PATCH', '/permissions/{id}')]
     #[Route('PUT', '/permissions/{id}')]
-    #[RequireRole('admin')]
+    #[RequireRole('Администратор')]
     public function update(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
@@ -68,7 +68,7 @@ class PermissionsController
     }
 
     #[Route('DELETE', '/roles/{id}')]
-    #[RequireRole('admin')]
+    #[RequireRole('Администратор')]
     public function delete(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);

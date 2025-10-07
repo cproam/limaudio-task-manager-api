@@ -87,9 +87,9 @@ class TaskFeatureController
             }
         }
 
-        if (in_array('admin', $roles, true)) {
+        if (in_array('Администратор', $roles, true)) {
             $items = $this->tasks->list($limit, $offset, $date);
-        } elseif (in_array('sales_manager', $roles, true)) {
+        } elseif (in_array('Менеджер по продажам', $roles, true)) {
             $items = $this->tasks->listMine($userId, $limit, $offset, $date);
         } else {
             $items = [];
@@ -247,14 +247,14 @@ class TaskFeatureController
             return Response::json(['error' => 'Invalid status'], 422);
         }
 
-        // Enforce visibility rules: admin can change any; sales_manager only if own/created; others forbidden
+        // Правила доступа: Администратор может менять любые; Менеджер по продажам — только свои или созданные; остальным нельзя
         $claims = $GLOBALS['auth_user'] ?? null;
         $roles = is_array($claims['roles'] ?? null) ? $claims['roles'] : [];
         $userId = isset($claims['sub']) ? (int)$claims['sub'] : 0;
         $task = $this->tasks->get($id);
         if (!$task) return Response::json(['error' => 'Not Found'], 404);
-        if (!in_array('admin', $roles, true)) {
-            if (in_array('sales_manager', $roles, true)) {
+        if (!in_array('Администратор', $roles, true)) {
+            if (in_array('Менеджер по продажам', $roles, true)) {
                 $assigned = isset($task['assigned_user_id']) ? (int)$task['assigned_user_id'] : 0;
                 $created = isset($task['created_by']) ? (int)$task['created_by'] : 0;
                 if (!($assigned === $userId || $created === $userId)) {

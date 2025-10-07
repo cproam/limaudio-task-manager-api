@@ -27,7 +27,7 @@ class DirectionsController
     }
 
     #[Route('POST', '/directions')]
-    #[RequireRole('admin')]
+    #[RequireRole('Администратор')]
     public function create(Request $req)
     {
         $data = $req->body;
@@ -45,7 +45,7 @@ class DirectionsController
 
     #[Route('PATCH', '/directions/{id}')]
     #[Route('PUT', '/directions/{id}')]
-    #[RequireRole('admin')]
+    #[RequireRole('Администратор')]
     public function update(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);
@@ -64,7 +64,7 @@ class DirectionsController
     }
 
     #[Route('DELETE', '/directions/{id}')]
-    #[RequireRole('admin')]
+    #[RequireRole('Администратор')]
     public function delete(Request $req, array $params)
     {
         $id = (int)($params['id'] ?? 0);

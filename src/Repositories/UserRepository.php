@@ -167,4 +167,11 @@ class UserRepository
             $stmt->execute([$pname, $userId]);
         }
     }
+
+    public function delete(int $id): bool
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM users WHERE id=?');
+        $stmt->execute([$id]);
+        return $stmt->rowCount() > 0;
+    }
 }

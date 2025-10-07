@@ -56,6 +56,10 @@ class DB
             description TEXT
         )');
 
+        // Переименование старых ролей с латиницей в кириллицу
+        $pdo->exec("UPDATE roles SET name='Администратор' WHERE name='admin'");
+        $pdo->exec("UPDATE roles SET name='Менеджер по продажам' WHERE name='sales_manager'");
+
         $pdo->exec('CREATE TABLE IF NOT EXISTS user_roles (
             user_id INTEGER NOT NULL,
             role_id INTEGER NOT NULL,
@@ -66,7 +70,7 @@ class DB
 
         // Seed roles
         $stmt = $pdo->prepare('INSERT OR IGNORE INTO roles(name) VALUES (?), (?)');
-        $stmt->execute(['admin', 'sales_manager']);
+        $stmt->execute(['Администратор', 'Менеджер по продажам']);
 
         // Permissions
         $pdo->exec('CREATE TABLE IF NOT EXISTS permissions (
