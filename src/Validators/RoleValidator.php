@@ -46,7 +46,6 @@ class RoleValidator
     {
         $dto = new \App\DTO\CreateRoleDTO();
         $dto->name = $data['name'] ?? '';
-        $dto->description = $data['description'] ?? '';
         return $this->validate($dto);
     }
 
@@ -54,7 +53,6 @@ class RoleValidator
     {
         $dto = new \App\DTO\UpdateRoleDTO();
         $dto->name = $data['name'] ?? '';
-        $dto->description = $data['description'] ?? '';
         return $this->validate($dto, $roleId);
     }
 }

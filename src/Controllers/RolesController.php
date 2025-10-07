@@ -41,8 +41,7 @@ class RolesController
         }
 
         $name = trim($data['name']);
-        $description = trim($data['description']);
-        $dir = $this->repo->create($name, $description);
+        $dir = $this->repo->create($name);
         return Response::json($dir, 201);
     }
 
@@ -61,8 +60,7 @@ class RolesController
         }
 
         $name = trim($data['name']);
-        $description = trim($data['description']);
-        $dir = $this->repo->update($id, $name, $description);
+        $dir = $this->repo->update($id, $name);
         if (!$dir) return Response::json(['error' => 'Not Found'], 404);
         return Response::json($dir);
     }

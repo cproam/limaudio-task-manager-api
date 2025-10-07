@@ -10,6 +10,4 @@ class CreateRoleDTO
     #[Required]
     #[Unique('roles', 'name')]
     public string $name;
-
-    public string $description;
 }
