@@ -184,6 +184,23 @@ class TaskFeatureController
         return Response::json($link);
     }
 
+    #[Route('POST', '/task/{id}/links')]
+    public function addLink(Request $req, array $params)
+    {
+        $taskId = (int)($params['id'] ?? 0);
+        $url = trim((string)($req->body['url'] ?? ''));
+        if ($url === '') {
+            return Response::json(['error' => 'url is required'], 422);
+        }
+
+        $link = $this->tasks->addLink($taskId, $url);
+        if (!$link) {
+            return Response::json(['error' => 'Not Found'], 404);
+        }
+
+        return Response::json($link, 201);
+    }
+
     #[Route('DELETE', '/task/{id}/links/{linkId}')]
     public function deleteLink(Request $req, array $params)
     {

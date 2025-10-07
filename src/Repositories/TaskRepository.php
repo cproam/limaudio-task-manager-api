@@ -128,6 +128,21 @@ class TaskRepository
         return ['id' => (int)$this->pdo->lastInsertId(), 'task_id' => $taskId, 'user_id' => $userId, 'text' => $text, 'created_at' => $now];
     }
 
+    public function addLink(int $taskId, string $url): ?array
+    {
+        $check = $this->pdo->prepare('SELECT id FROM tasks WHERE id=?');
+        $check->execute([$taskId]);
+        if ($check->fetchColumn() === false) {
+            return null;
+        }
+
+        $stmt = $this->pdo->prepare('INSERT INTO task_links(task_id,url) VALUES(?,?)');
+        $stmt->execute([$taskId, $url]);
+
+        $id = (int)$this->pdo->lastInsertId();
+        return ['id' => $id, 'task_id' => $taskId, 'url' => $url];
+    }
+
     public function attachFile(int $taskId, string $fileName, string $fileUrl): array
     {
         $stmt = $this->pdo->prepare('INSERT INTO task_files(task_id,file_name,file_url) VALUES(?,?,?)');
