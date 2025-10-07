@@ -20,7 +20,7 @@ class Jwt
         return base64_decode(strtr($data, '-_', '+/')) ?: '';
     }
 
-    public static function sign(array $payload, int $ttlSeconds = 3600): string
+    public static function sign(array $payload, int $ttlSeconds = 120): string
     {
         $header = ['alg' => 'HS256', 'typ' => 'JWT'];
         $now = time();
