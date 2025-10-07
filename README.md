@@ -26,6 +26,8 @@
 - Получить токен: `POST /auth/login`
 - Использовать: заголовок `Authorization: Bearer <jwt>`
 - Срок жизни токена: 12 часов (можно изменить в `Jwt::sign`)
+- Refresh-токен живет 30 дней и используется для обновления access-токена.
+- Refresh-токен: `POST /auth/refresh` — передайте { "refresh_token": "..." } для обновления access-токена и получения нового refresh-токена.
 
 ### Вход (логин)
 - `POST /auth/login`
@@ -33,6 +35,7 @@
 - Ответ 200:
   {
     "token": "...",
+    "refresh_token": "...",
     "user": { "id": 1, "name": "...", "email": "...", "telegram_id": "...", "roles": ["Администратор"] }
   }
 - Ошибки: 401 (invalid credentials), 422 (не хватает полей)
