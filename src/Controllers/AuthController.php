@@ -44,7 +44,7 @@ class AuthController
         $rs = $pdo->prepare('SELECT r.name FROM roles r JOIN user_roles ur ON ur.role_id=r.id WHERE ur.user_id=?');
         $rs->execute([(int)$u['id']]);
         $roles = array_map(fn($r) => $r['name'], $rs->fetchAll());
-        $token = Jwt::sign(['sub' => (int)$u['id'], 'email' => $u['email'], 'name' => $u['name'], 'roles' => $roles], 3600 * 12);
+        $token = Jwt::sign(['sub' => (int)$u['id'], 'email' => $u['email'], 'name' => $u['name'], 'roles' => $roles], 60);
         return Response::json(['token' => $token, 'user' => ['id' => (int)$u['id'], 'name' => $u['name'], 'email' => $u['email'], 'telegram_id' => $u['telegram_id'], 'roles' => $roles]]);
     }
 }
