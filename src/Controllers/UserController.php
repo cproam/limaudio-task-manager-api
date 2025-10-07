@@ -23,7 +23,7 @@ class UserController
     }
 
     #[Route('POST', '/users')]
-    #[RequireRole('admin')]
+    #[RequireRole('Администратор')]
     public function create(Request $req)
     {
         $data = $req->body;

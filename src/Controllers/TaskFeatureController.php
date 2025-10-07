@@ -108,11 +108,10 @@ class TaskFeatureController
 
         $task = $this->tasks->get($id);
         if (!$task) return Response::json(['error' => 'Not Found'], 404);
-        // Visibility: admin => any; sales_manager => own or created_by; others => deny
-        if (in_array('admin', $roles, true)) {
+        if (in_array('Администратор', $roles, true)) {
             return Response::json($task);
         }
-        if (in_array('sales_manager', $roles, true)) {
+        if (in_array('Менеджер по продажам', $roles, true)) {
             $assigned = isset($task['assigned_user_id']) ? (int)$task['assigned_user_id'] : 0;
             $created = isset($task['created_by']) ? (int)$task['created_by'] : 0;
             if ($assigned === $userId || $created === $userId) {
