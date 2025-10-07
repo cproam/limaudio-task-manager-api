@@ -42,7 +42,7 @@ class RoleRepository
 
     public function create(string $name): array
     {
-        $stmt = $this->pdo->prepare('INSERT INTO roles(name) VALUES(?, ?)');
+        $stmt = $this->pdo->prepare('INSERT INTO roles(name) VALUES(?)');
         $stmt->execute([$name]);
         $id = (int)$this->pdo->lastInsertId();
         return $this->findById($id);
