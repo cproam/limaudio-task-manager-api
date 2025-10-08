@@ -8,14 +8,12 @@ use App\Database\DB;
 use App\Security\Jwt;
 use App\Routing\Route;
 use App\DTO\LoginDTO;
+use App\Support\Env;
 use App\Validators\AuthValidator;
 use PDO;
 
 class AuthController
 {
-    private const ACCESS_TOKEN_TTL = 60 * 60 * 3; // 1 minute
-    private const REFRESH_TOKEN_TTL = 60 * 60 * 12; // 1 hour
-
     private AuthValidator $validator;
 
     public function __construct()
@@ -115,7 +113,7 @@ class AuthController
             'email' => $user['email'],
             'name' => $user['name'],
             'roles' => $roles,
-        ], self::ACCESS_TOKEN_TTL);
+        ], Env::get('ACCESS_TOKEN_TTL', 60));
 
         $refreshToken = bin2hex(random_bytes(32));
         $now = time();
@@ -124,7 +122,7 @@ class AuthController
         $insert->execute([
             (int)$user['id'],
             hash('sha256', $refreshToken),
-            $now + self::REFRESH_TOKEN_TTL,
+            $now + Env::get('REFRESH_TOKEN_TTL', 300),
             $now,
         ]);
 
